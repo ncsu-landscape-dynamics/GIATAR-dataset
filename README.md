@@ -7,6 +7,8 @@ Global Invasive Traits and Records Database
 
 ## Setting up the environment/installing
 
+We use conda for environment management - 
+```conda env create -n GITAR_database -f environment.yml```
 
 ## Folders and files 
 
