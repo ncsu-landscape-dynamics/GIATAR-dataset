@@ -17,7 +17,8 @@ from time import sleep
 from datetime import date
 
 import pycountry
-import spacy
+
+# import spacy
 import regex as re
 
 import os
@@ -48,7 +49,6 @@ hosts = f"/hosts"
 
 
 def eppo_api(code, query, token):
-
     # API URL base
     root = "https://data.eppo.int/api/rest/1.0/taxon/"
     auth = f"?authtoken={token}"
@@ -94,7 +94,6 @@ def eppo_api(code, query, token):
 
 
 def eppo_cat_api(code, token):
-
     categorization = f"/categorization"
 
     root = "https://data.eppo.int/api/rest/1.0/taxon/"
@@ -117,7 +116,6 @@ def eppo_cat_api(code, token):
 
 
 def scrape_eppo_reports_species(code):
-
     # Ignore SSL certificate errors
     url = f"https://gd.eppo.int/taxon/{code}/reporting"
     try:
@@ -148,7 +146,6 @@ def scrape_eppo_reports_species(code):
 
 
 def eppo_query_wrapper(eppo_species, query, token, append=False):
-
     codes = eppo_species["codeEPPO"].unique()
 
     print(f"Querying EPPO for {query} data for {len(codes)} species...")
@@ -174,8 +171,8 @@ def eppo_query_wrapper(eppo_species, query, token, append=False):
 
     if len(read_tables) < 1:
         print(f"No data for {query} found!")
-    
-    else: 
+
+    else:
         section_table = read_tables[0]
 
         for table in range(1, len(read_tables)):
@@ -191,7 +188,7 @@ def eppo_query_wrapper(eppo_species, query, token, append=False):
 
         section_table.to_csv(f"{data_dir}/EPPO data/EPPO_{query[1:]}.csv", index=False)
 
-    # Instead of re-writing, do we want to consolidate? I'm not sure...
+        # Instead of re-writing, do we want to consolidate? I'm not sure...
 
         print(
             f'File for "{query}" complete! Species: {len(section_table.codeEPPO.unique())}, Rows: {len(section_table.index)}'
@@ -201,6 +198,7 @@ def eppo_query_wrapper(eppo_species, query, token, append=False):
 
 
 # Using Geopolitical entities from Spacy Named Entity Recognition from EPPO titles
+
 
 def spacy_place(text):
     nlp = spacy.load("en_core_web_sm")
@@ -279,7 +277,6 @@ def country_from_eppo_reports(section_table):
 
 
 def scrape_monthly_eppo_report(year, month):
-
     # Ignore SSL certificate errors
     url = f"https://gd.eppo.int/reporting/Rse-{year}-{month}"
     try:
@@ -338,8 +335,8 @@ def get_species(title):
 
 # Internal function to get the year and type and references
 
-def get_distribution_data(url):
 
+def get_distribution_data(url):
     # Ignore SSL certificate errors
     try:
         html = urlopen(url, context=ctx).read()
@@ -365,20 +362,46 @@ def get_distribution_data(url):
 
     if re.search("Situation in neighbouring countries", soup_text):
         if re.search("References", soup_text):
-            references = soup_text[re.search("References", soup_text).span()[1]:re.search("Situation in neighbouring countries", soup_text).span()[0]].strip()
+            references = soup_text[
+                re.search("References", soup_text)
+                .span()[1] : re.search("Situation in neighbouring countries", soup_text)
+                .span()[0]
+            ].strip()
             if re.search("Comments", soup_text):
-                comments = soup_text[re.search("Comments", soup_text).span()[1]:re.search("References", soup_text).span()[0]].strip()
+                comments = soup_text[
+                    re.search("Comments", soup_text)
+                    .span()[1] : re.search("References", soup_text)
+                    .span()[0]
+                ].strip()
         elif re.search("Comments", soup_text):
-                comments = soup_text[re.search("Comments", soup_text).span()[1]:re.search("Situation in neighbouring countries", soup_text).span()[0]].strip()
+            comments = soup_text[
+                re.search("Comments", soup_text)
+                .span()[1] : re.search("Situation in neighbouring countries", soup_text)
+                .span()[0]
+            ].strip()
     elif re.search("References", soup_text):
-        references = soup_text[re.search("References", soup_text).span()[1]:re.search("Contact EPPO", soup_text).span()[0]].strip()
+        references = soup_text[
+            re.search("References", soup_text)
+            .span()[1] : re.search("Contact EPPO", soup_text)
+            .span()[0]
+        ].strip()
         if re.search("Comments", soup_text):
-            comments = soup_text[re.search("Comments", soup_text).span()[1]:re.search("References", soup_text).span()[0]].strip()
+            comments = soup_text[
+                re.search("Comments", soup_text)
+                .span()[1] : re.search("References", soup_text)
+                .span()[0]
+            ].strip()
     elif re.search("Comments", soup_text):
-        comments = soup_text[re.search("Comments", soup_text).span()[1]:re.search("Contact EPPO", soup_text).span()[0]].strip()
+        comments = soup_text[
+            re.search("Comments", soup_text)
+            .span()[1] : re.search("Contact EPPO", soup_text)
+            .span()[0]
+        ].strip()
 
     # Find references: Pattern (YYYY) and keep just YYYY
-    reference_years = re.findall(r"\(([0-9]{4})\)", references) + re.findall(r"\(([0-9]{4})/", comments)
+    reference_years = re.findall(r"\(([0-9]{4})\)", references) + re.findall(
+        r"\(([0-9]{4})/", comments
+    )
     reference_years = [int(year) for year in reference_years]
     if len(reference_years) > 0:
         earliest_reference = min(reference_years)
@@ -393,7 +416,7 @@ def get_distribution_data(url):
             combined_references = references
     else:
         combined_references = comments
-    
+
     return intro_years[0], type, earliest_reference, combined_references
 
 
@@ -402,7 +425,6 @@ def get_distribution_data(url):
 
 
 def scrape_eppo_distribution_species(code):
-
     # Ignore SSL certificate errors
     url = f"https://gd.eppo.int/taxon/{code}/distribution"
     try:
@@ -428,7 +450,6 @@ def scrape_eppo_distribution_species(code):
         report_links.append("https://gd.eppo.int" + link.get("href"))
 
     if len(report_links) > 0:
-
         report_table["link"] = report_links
         report_table["ISO2"] = report_table.link.str[-2:]
 
@@ -436,12 +457,14 @@ def scrape_eppo_distribution_species(code):
             get_distribution_data
         )
 
-        report_table[["First date", "First date type", "First reference", "References"]] = pd.DataFrame(
+        report_table[
+            ["First date", "First date type", "First reference", "References"]
+        ] = pd.DataFrame(
             report_table["First record data"].to_list(), index=report_table.index
         )
 
         report_table = report_table.drop(columns=["First record data"])
-    
+
     return report_table
 
 
@@ -549,7 +572,6 @@ def call_gbif_api(call):
 
 
 def CABI_scrape_invasive(CABI_species):
-
     for i in CABI_species.index:
         code = CABI_species.loc[i, "codeCABI"]
         url = f"https://www.cabi.org/isc/datasheet/{code}"
@@ -627,20 +649,16 @@ def unpack_CABI_scrape(scrape):
 
 
 def CABI_sections_to_tables(CABI_tables, append=False):
-
     sections = CABI_tables.loc[~CABI_tables["section"].isnull()].section.unique()
 
     for section in sections:
-
         sub_section = CABI_tables.loc[CABI_tables["section"] == section].reset_index()
         read_tables = []
 
         for i in sub_section.index:
-
             tables = pd.read_html(sub_section.content[i])
 
             for table in tables:
-
                 table["code"] = sub_section.code[i]
                 table["usageKey"] = sub_section.usageKey[i]
                 table["section"] = sub_section.section[i]

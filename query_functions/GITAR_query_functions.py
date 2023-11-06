@@ -50,15 +50,22 @@ def create_dotenv(dp):
 if "invasive_all_source" not in globals():
     global invasive_all_source
     invasive_all_source = pd.read_csv(r"species lists\invasive_all_source.csv")
+    # set usageKey to string
+    invasive_all_source["usageKey"] = invasive_all_source["usageKey"].astype(str)
 
 
 if "first_records" not in globals():
     global first_records
     first_records = pd.read_csv(r"occurrences\first_records.csv", low_memory=False)
+    # set usageKey to string
+    first_records["usageKey"] = first_records["usageKey"].astype(str)
 
 
 def get_species_name(usageKey):
-    # function takes a usageKey as a
+    # if usagekey is not a string, convert to string
+    if not isinstance(usageKey, str):
+        usageKey = str(usageKey)
+
     if usageKey in invasive_all_source["usageKey"].values:
         return invasive_all_source.loc[
             invasive_all_source["usageKey"] == usageKey, "canonicalName"
@@ -88,7 +95,21 @@ def get_usageKey(species_name):
         ].values[0]
     elif species_name in invasive_all_source["usageKey"].values:
         return species_name
-
+    elif species_name in invasive_all_source["speciesGBIF"].values:
+        return invasive_all_source.loc[
+            invasive_all_source["speciesGBIF"] == species_name, "usageKey"
+        ].values[0]
+    elif species_name in invasive_all_source["speciesDAISIE"].values:
+        return invasive_all_source.loc[
+            invasive_all_source["speciesDAISIE"] == species_name, "usageKey"
+        ].values[0]
+    # elif species name is digits or starts with "xx" or "XX" return species name
+    elif (
+        species_name.isdigit()
+        or species_name.startswith("xx")
+        or species_name.startswith("XX")
+    ):
+        return species_name
     else:
         try:
             gbif = pygbif.species.name_backbone(name=species_name, rank="species")
@@ -129,24 +150,20 @@ def check_species_exists(species_name):
 
 
 def get_first_introductions(
-    usageKey, check_exists=False, ISO3_only=False, import_additional_native_info=True
+    species_name,
+    check_exists=False,
+    ISO3_only=False,
+    import_additional_native_info=True,
 ):
     # check_exists = True will raise a KeyError if species is not in database
     # ISO3_only = True will return only return species location info that are 3 character ISO3 codes. Some other location info includes bioregions or other geonyms
     # import_additional_native_info = True will import additional native range info, first by seeing if native range info for a particular country is availible from sources that reported later than the first introduction, and second by importing native range info from the native range database
-
+    usageKey = get_usageKey(species_name)
     if check_exists == True:
         if not check_species_exists(usageKey):
             raise KeyError(
                 "Species not in Database. Try checking master list with get_all_species()"
             )
-
-    if isinstance(usageKey, int):
-        usageKey = str(usageKey)
-
-    if not usageKey.isnumeric():
-        "getting usageKey from species name"
-        usageKey = get_usageKey(usageKey)
 
     # create df of all first introductinos where usageKey = usageKey
 
@@ -174,8 +191,9 @@ def get_first_introductions(
 
 
 def get_all_introductions(
-    usageKey, check_exists=False, ISO3_only=True, import_additional_native_info=True
+    species_name, check_exists=False, ISO3_only=True, import_additional_native_info=True
 ):
+    usageKey = get_usageKey(species_name)
     if check_exists == True:
         if not check_species_exists(usageKey):
             raise KeyError(
@@ -237,6 +255,18 @@ def get_ecology(species_name):
     CABI_natural_enemies = pd.read_csv(r"CABI data\CABI_tables\tonaturalEnemies.csv")
     CABI_water_tolerances = pd.read_csv(r"CABI data\CABI_tables\towaterTolerances.csv")
     CABI_wood_packaging = pd.read_csv(r"CABI data\CABI_tables\towoodPackaging.csv")
+    DAISIE_habitats = pd.read_csv(r"DAISIE data\DAISIE_habitat.csv")
+
+    # for all tables, make sure usagekey is a string
+    CABI_rainfall["usageKey"] = CABI_rainfall["usageKey"].astype(str)
+    CABI_airtemp["usageKey"] = CABI_airtemp["usageKey"].astype(str)
+    CABI_climate["usageKey"] = CABI_climate["usageKey"].astype(str)
+    CABI_environments["usageKey"] = CABI_environments["usageKey"].astype(str)
+    CABI_lat_alt["usageKey"] = CABI_lat_alt["usageKey"].astype(str)
+    CABI_natural_enemies["usageKey"] = CABI_natural_enemies["usageKey"].astype(str)
+    CABI_water_tolerances["usageKey"] = CABI_water_tolerances["usageKey"].astype(str)
+    CABI_wood_packaging["usageKey"] = CABI_wood_packaging["usageKey"].astype(str)
+    DAISIE_habitats["usageKey"] = DAISIE_habitats["usageKey"].astype(str)
 
     # return a list of all rows where usageKey = usageKey
     # place rows into a dataframe and put into results_dict with key = filename
@@ -255,6 +285,10 @@ def get_ecology(species_name):
     result_dict["CABI_wood_packaging"] = CABI_wood_packaging.loc[
         CABI_wood_packaging["usageKey"] == usageKey
     ]
+    result_dict["DAISIE_habitats"] = DAISIE_habitats.loc[
+        DAISIE_habitats["usageKey"] == usageKey
+    ]
+
     # remove empty keys in result_dict
     result_dict = {k: v for k, v in result_dict.items() if not v.empty}
 
@@ -277,7 +311,8 @@ def get_hosts_and_vectors(species_name):
         r"CABI data\CABI_tables\tovectorsAndIntermediateHosts.csv"
     )
     EPPO_hosts = pd.read_csv(r"EPPO data\EPPO_hosts.csv")
-
+    DAISIE_pathways = pd.read_csv(r"DAISIE data\DAISIE_pathways.csv")
+    DAISIE_vectors = pd.read_csv(r"DAISIE data\DAISIE_vectors.csv")
     # convert usageKey to string for every dataframe
     CABI_tohostPlants["usageKey"] = CABI_tohostPlants["usageKey"].astype(str)
     CABI_topathwayVectors["usageKey"] = CABI_topathwayVectors["usageKey"].astype(str)
@@ -312,6 +347,12 @@ def get_hosts_and_vectors(species_name):
         CABI_tovectorsAndIntermediateHosts["usageKey"] == usageKey
     ]
     results_dict["EPPO_hosts"] = EPPO_hosts.loc[EPPO_hosts["usageKey"] == usageKey]
+    results_dict["DAISIE_pathways"] = DAISIE_pathways.loc[
+        DAISIE_pathways["usageKey"] == usageKey
+    ]
+    results_dict["DAISIE_vectors"] = DAISIE_vectors.loc[
+        DAISIE_vectors["usageKey"] == usageKey
+    ]
 
     # remove blank dataframes from results_dict
     results_dict = {k: v for k, v in results_dict.items() if not v.empty}
@@ -360,7 +401,7 @@ def get_species_list(
     return usageKey_list
 
 
-def get_native_ranges(usageKey, ISO3=None):
+def get_native_ranges(species_name, ISO3=None):
     # as default, takes usageKey or species name as string and returns as list of native ISO3 codes
     # if ISO3 is not None, returns True or False if species is native to ISO3 - takes a list of ISO3 as input
 
@@ -379,11 +420,8 @@ def get_native_ranges(usageKey, ISO3=None):
     if "all_records" not in globals():
         global all_records
         all_records = pd.read_csv(r"occurrences\all_records.csv", low_memory=False)
+    usageKey = get_usageKey(species_name)
 
-    if isinstance(usageKey, int):
-        usageKey = str(usageKey)
-    if not usageKey.isnumeric():
-        usageKey = str(get_usageKey(usageKey))
     if ISO3 == None:
         records = all_records.loc[all_records["usageKey"] == usageKey]
         # filter records to non-na values of Native
@@ -486,59 +524,28 @@ def get_native_ranges(usageKey, ISO3=None):
         except UnboundLocalError:
             print("ISO3 missing from bioregion crosswalk")
             print("please add" + iso3 + "to bioregion crosswalk")
-        """
-        native_ranges["usageKey"] = native_ranges["usageKey"].astype(str)
-        native_ranges_temp = native_ranges.loc[native_ranges["usageKey"] == usageKey]
-        # filter to usageKey, source, bioregion
-
-        native_ranges_temp = native_ranges_temp[
-            ["Source", "bioregion", "DAISIE_region", "Reference"]
-        ]
-        # rename source to Source
-        # native_ranges_temp = native_ranges_temp.rename(columns={"Source": "Reference"})
-        # add column Source with value 'GITAR native ranges'
-        # native_ranges_temp["Source"] = "GITAR native ranges"
-
-        # combine records and native_ranges_temp
-        # set reecords bioregion and DAISIE_region to na
-
-        records = records.append(native_ranges_temp)
-        """
+            return None
 
 
-"""
-    bioregions_list = native_ranges["bioregion"].unique().tolist()
-    for br in bioregions_list:
-        # use crosswalk to get all ISO3 matching bioregion
-        if br in native_range_crosswalk["bioregion"].values:
-            ISO3_df = native_range_crosswalk.loc[
-                native_range_crosswalk["bioregion"] == br, "ISO3"
-            ]
-        # if native_ranges_df does not exist, create it
-        if "native_ranges_df" not in locals():
-            native_ranges_df = pd.DataFrame()
-            # native ranges df is a dataframe of all records in native_ranges_temp where bioregion = br
+def get_common_names(species_name):
+    usageKey = get_usageKey(species_name)
 
-        # for each unique ISO3 in ISO3_df, add a row to native_ranges_df with source and bioregion from native_ranges_temp where bioregion = br and ISO3 = ISO3 and column "database" = 'GITAR native ranges'
-        for iso in ISO3_df:
-            # create new row
-            new_row = native_ranges_temp.loc[native_ranges_temp["bioregion"] == br]
-            # add ISO3 to new row
-            new_row["ISO3"] = iso
-            # add database to new row
-            new_row["database"] = "GITAR native ranges"
-            # rename source to Source
-            new_row = new_row.rename(columns={"source": "Source"})
+    DAISIE_vernacular = pd.read_csv(
+        r"DAISIE data\DAISIE_vernacular_names.csv", low_memory=False
+    )
+    EPPO_names = pd.read_csv(r"EPPO data\EPPO_names.csv", low_memory=False)
+    results_dict = {}
+    DAISIE_vernacular["usageKey"] = DAISIE_vernacular["usageKey"].astype(str)
+    EPPO_names["usageKey"] = EPPO_names["usageKey"].astype(str)
 
-            # add new row to native_ranges_df
-            native_ranges_df = native_ranges_df.append(new_row)
+    # if usagekey in daisie, print "in daisie"
+    print(DAISIE_vernacular.head())
+    if usageKey in DAISIE_vernacular["usageKey"].values:
+        print("in daisie")
 
-    # append native_ranges_df to records
-    records = records.append(native_ranges_df)
-
-    # return list of bioregion names where usageKey = usageKey
-    # select rows of native_ranges where usageKey = usageKey
-    # set native_ranges usageKey to string
-
-    return nr_list
-"""
+    results_dict["DAISIE_vernacular"] = DAISIE_vernacular.loc[
+        DAISIE_vernacular["usageKey"] == usageKey
+    ]
+    results_dict["EPPO_names"] = EPPO_names.loc[EPPO_names["usageKey"] == usageKey]
+    results_dict = {k: v for k, v in results_dict.items() if not v.empty}
+    return results_dict
