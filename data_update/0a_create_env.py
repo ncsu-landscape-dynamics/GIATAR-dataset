@@ -36,7 +36,7 @@ base_obs_year = 1970
 
 # Store information about last updates
 gbif_obs_last_update = "2023-04-14"
-species_lists_last_update = "2023-04-14"
+eppo_report_last_update = "2023-04-14"
 
 with open(".env", "w") as f:
     f.write(f"DATA_PATH='{drive_letter + data_dir}'\n")
@@ -50,6 +50,6 @@ with open(".env", "w") as f:
     f.write(f"EPPO_TOKEN='{eppo_token}'\n")
     f.write(f"BASE_OBS_YEAR='{base_obs_year}'\n")
     f.write(f"GBIF_OBS_UPDATED='{gbif_obs_last_update}'\n")
-    f.write(f"EPPO_REP_UPDATED='{gbif_obs_last_update}'\n")
+    f.write(f"EPPO_REP_UPDATED='{eppo_report_last_update}'\n")
     f.close()
 
