@@ -28,18 +28,22 @@ today = date.today()
 
 # Start with master list
 
-species_list = pd.read_csv(data_dir + "species lists/invasive_all_source.csv")
+species_list = pd.read_csv(data_dir + "species lists/invasive_all_source.csv", dtype={"usageKey":str})
 
 # Get keys that belong to new species (need full history)
-new_keys = pd.read_csv(data_dir + "species lists/new/new_usageKeys.csv")
+new_keys = pd.read_csv(data_dir + "species lists/new/new_usageKeys.csv", dtype={"usageKey":str})
 
-# Only keep usageKeys that don't start with XX
-new_keys = new_keys[~new_keys['usageKey'].str.startswith('XX')]
-new_keys = new_keys[~new_keys['usageKey'].str.startswith('Xx')]
+# Only keep usageKeys that don't start with X
+new_keys = new_keys[~new_keys['usageKey'].str.startswith('X')]
+species_list = species_list[~species_list['usageKey'].str.startswith('X')]
 
 # Get list of species that are new
 new_invasive_species = species_list.loc[species_list['usageKey'].isin(new_keys['usageKey']), "usageKey"].unique()
 prev_species = species_list.loc[~species_list['usageKey'].isin(new_keys['usageKey']), "usageKey"].unique()
+
+# Convert all usageKeys to integers
+new_invasive_species = [int(x) for x in new_invasive_species]
+prev_species = [int(x) for x in prev_species]
 
 # For previous species, we only need new data
 # Get years for which data is needed
