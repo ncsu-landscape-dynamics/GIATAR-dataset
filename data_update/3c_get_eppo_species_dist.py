@@ -28,14 +28,14 @@ today = date.today()
 
 # Bring in EPPO invasive records
 
-eppo_link = pd.read_csv(data_dir + "link files/EPPO_link.csv")
-eppo_new = pd.read_csv(data_dir + "species lists/new/eppo_new.csv")
+eppo_link = pd.read_csv(data_dir + "link files/EPPO_link.csv", dtype={"usageKey": str})
+eppo_new = pd.read_csv(data_dir + "species lists/new/eppo_new.csv", dtype={"usageKey": str})
 eppo_invasive_new = eppo_link.loc[eppo_link.usageKey.isin(eppo_new.usageKey)].reset_index(drop=True)
 codes = eppo_invasive_new["codeEPPO"].unique()
 
 # Read in previous data
 try:
-    prev_section_table = pd.read_csv(f"{data_dir}/EPPO data/EPPO_distribution.csv")
+    prev_section_table = pd.read_csv(f"{data_dir}/EPPO data/EPPO_distribution.csv", dtype={"usageKey": str})
     print("Imported EPPO distribution data.")
 except FileNotFoundError:
     print("No previous EPPO distribution data found.")
