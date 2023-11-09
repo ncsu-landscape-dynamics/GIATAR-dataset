@@ -6,25 +6,9 @@ Description: Create the .env file with workspace-relevant information
 """
 
 # Where the .csv files are being stored (data_dir)
-# Login information for Digital Ocean
-# Modify this script in order to update any of these fields
-
-# Where the files will be read/written
 
 drive_letter = "Q:"
 data_dir = "/Shared drives/Pandemic Data/Invasive database/"
-
-# Access information for the database on Digital Ocean
-
-username = "insert"  # DB username
-password = "insert"  # DB password
-host = "insert"  # Public IP address for your instance
-port = "insert"  # DB port
-database = "biotraits"  # Name of database ('postgres' by default)
-db_url = "postgresql+psycopg2://{}:{}@{}:{}/{}".format(
-    username, password, host, port, database
-)
-try_url = f"postgresql+psycopg2://doadmin:{password}@pops-db-do-user-8386929-0.b.db.ondigitalocean.com:{port}/biotraits?sslmode=require"
 
 # Auth token for EPPO API
 
@@ -35,6 +19,7 @@ eppo_token = "insert"  # Anyone can register on EPPO (https://data.eppo.int/user
 base_obs_year = 1970
 
 # Store information about last updates
+
 gbif_obs_last_update = "2023-04-14"
 eppo_report_last_update = "2023-04-14"
 
