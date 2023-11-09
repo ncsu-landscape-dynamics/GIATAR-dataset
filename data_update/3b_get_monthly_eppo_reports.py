@@ -54,12 +54,12 @@ for i in range(last_year + 1, year):
 
 # Past months of this year (up to but not including this month)
 
-months += [f"{i:02d}" for i in range(1, today.month + 1)]
+months += [f"{i:02d}" for i in range(1, today.month)]
 years += [year] * len([f"{i:02d}" for i in range(1, today.month)])
 
 # For species matching
 
-eppo_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/eppo_gbif.csv")
+eppo_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/eppo_gbif.csv", dtype={"usageKey":str})
 species_cols = pd.read_csv(data_dir + "EPPO data/eppo_full_list.csv")
 species_cols["fullname"] = species_cols.apply(lambda x: x.fullname.lower(), axis=1)
 
@@ -123,7 +123,7 @@ for year, month in zip(years, months):
 # E.g. not found in GBIF. We may want to check and design a process for those at some point.
 
 # Append to exisiting records
-eppo_first_records = pd.read_csv(f"{data_dir}/EPPO data/EPPO_first_reports.csv")
+eppo_first_records = pd.read_csv(f"{data_dir}/EPPO data/EPPO_first_reports.csv", dtype={"usageKey":str})
 section_tables = pd.concat(
     [eppo_first_records, section_tables.drop(columns="speciesEPPO")]
 ).drop_duplicates()
