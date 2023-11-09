@@ -17,9 +17,9 @@ data_dir = os.getenv("DATA_PATH")
 
 # Bring in new species lists
 
-asfr_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/asfr_gbif.csv")
-cabi_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/cabi_gbif.csv")
-eppo_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/eppo_gbif.csv")
+asfr_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/asfr_gbif.csv", dtype={"usageKey":str})
+cabi_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/cabi_gbif.csv", dtype={"usageKey":str})
+eppo_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/eppo_gbif.csv", dtype={"usageKey":str})
 
 # Specific row names
 
@@ -80,6 +80,7 @@ eppo_match = pd.merge(
 )
 
 # CABI already matched to invasive
+
 cabi_gbif_inv = pd.read_csv(
     data_dir + "species lists/gbif_matched/CABI_invasive_TF.csv"
 )
