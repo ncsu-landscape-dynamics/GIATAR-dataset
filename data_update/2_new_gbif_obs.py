@@ -108,6 +108,10 @@ all_counts = (
     .reset_index()
 )
 
+# Set species datatype to integer and then string
+
+all_counts["species"] = all_counts["species"].astype(int).astype(str)
+
 # Save full response file to CSV (just in case it breaks!)
 
 print("Saving preliminary file...")
@@ -148,12 +152,17 @@ first_records.to_csv(data_dir + "GBIF data/new_GBIF_first_records.csv", index=Fa
 
 # Consolidate with and replace previous first records
 
-previous_first_records = pd.read_csv(data_dir + "GBIF data/GBIF_first_records.csv")
+previous_first_records = pd.read_csv(data_dir + "GBIF data/GBIF_first_records.csv", dtype={"usageKey":str})
+
 first_records = (
     pd.concat([previous_first_records, first_records])
     .reset_index(drop=True)
     .drop_duplicates()
 )
+
+# Set species datatype to integer and then string (again)
+
+first_records["species"] = first_records["species"].astype(int).astype(str)
 
 # Regroup by species and country to get the earliest first record
 
