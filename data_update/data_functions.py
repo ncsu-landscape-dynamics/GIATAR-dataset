@@ -688,6 +688,40 @@ def CABI_sections_to_tables(CABI_tables, append=False):
     return None
 
 
+### DAISIE functions
+
+daisie_year_map = {
+    '90`s ':"1990",
+    'Unknown': None,
+    'unknown': None, 
+    'since long': "700",
+    'Since long': "700",
+    '20. century':"1950",
+    '19th century':"1850"
+}
+
+def clean_DAISIE_year(year):
+    # DAISIE years contain a mix of values - some are single years, some are ranges
+    # Some include descriptions like "before 2000" or "probabbly around 1960 by symptoms"
+    # Some are missing values (?, 0, .)
+    # Function to clean each value to represent a single year as a float
+    if len(str(year)) > 3:
+        try:
+            first_year = float(year)
+        except:
+            # Look for all 4 digit numbers in the string and take the lowest value
+            # If a year is a range, take the start year. If a year is a description, take the year from the description. 
+            years = re.findall(r"[0-9]{4}", year)
+            try:
+                first_year = min(years)
+            except:
+                # Use the map for the remaining irregular names
+                first_year = daisie_year_map[year]
+    else: 
+        first_year = None
+    return first_year
+
+
 #### Utility functions
 
 # Handle NAs with pycountry fuzzy search
@@ -709,3 +743,4 @@ def get_ISO3(loc):
                 return "Not found"
     else:
         return np.nan
+
