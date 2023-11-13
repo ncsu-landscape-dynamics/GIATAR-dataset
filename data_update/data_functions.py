@@ -18,7 +18,7 @@ from datetime import date
 
 import pycountry
 
-# import spacy
+import spacy
 import regex as re
 
 import os
