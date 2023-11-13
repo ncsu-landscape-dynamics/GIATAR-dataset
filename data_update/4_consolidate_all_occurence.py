@@ -14,7 +14,7 @@ import re
 
 sys.path.append(os.getcwd())
 
-from data_update.data_functions import get_ISO3
+from data_update.data_functions import get_ISO3, clean_DAISIE_year
 
 # Get data dir - invasive database folder
 dotenv.load_dotenv(".env")
@@ -111,6 +111,55 @@ GBIF_occur["Reference"] = "Counts API"
 
 # Add a source column
 GBIF_occur["Source"] = "GBIF"
+
+### DAISIE data
+
+print("Reading and cleaning DAISIE data...")
+
+# Already mostly in standard format: Read file and set column names
+# DAISIE first records dataset
+DAISIE_occur = pd.read_csv(data_dir + "DAISIE data/DAISIE_distribution.csv", dtype={"usageKey ": "str"})
+
+# Columns to keep from the DAISIE_occur data
+# code_region
+# region_country as location
+# DAISIE_idspecies as codeDAISIE
+DAISIE_occur = DAISIE_occur[["DAISIE_idspecies", "start_year", "end_year", "code_region", "region_country"]]
+DAISIE_occur.rename(columns={"region_country": "location", "DAISIE_idspecies":"codeDAISIE"}, inplace=True)
+
+# codeDAISIE as integer to merge with the link file
+DAISIE_occur["codeDAISIE"] = DAISIE_occur["codeDAISIE"].astype(int)
+
+# If there's a value for start_year, set year to start_year. If start_year is NA, set year to end_year
+DAISIE_occur["text_year"] = DAISIE_occur["start_year"]
+DAISIE_occur.loc[DAISIE_occur["text_year"].isna(), "text_year"] = DAISIE_occur.loc[DAISIE_occur["text_year"].isna(), "end_year"]
+
+# DAISIE years contain a mix of values - some are single years, some are ranges
+# Some include descriptions like "before 2000" or "probabbly around 1960 by symptoms"
+# Some are missing values (?, 0, .)
+# Clean year column
+DAISIE_occur["year"] = DAISIE_occur["text_year"].apply(clean_DAISIE_year)
+
+# Drop start_year, end_year, and text_year columns
+DAISIE_occur.drop(columns=["start_year", "end_year", "text_year"], inplace=True)
+
+# Type == "First report"
+# Source == "DAISIE"
+# Reference == None
+# Native == False
+DAISIE_occur["Type"] = "First report"
+DAISIE_occur["Source"] = "DAISIE"
+DAISIE_occur["Reference"] = None
+DAISIE_occur["Native"] = False
+
+# DAISIE link
+
+DAISIE_link = pd.read_csv(data_dir + "link files/DAISIE_link.csv", dtype={"usageKey": "str"}, usecols=["usageKey", "codeDAISIE"])
+# codeDAISIE as integer
+DAISIE_link["codeDAISIE"] = DAISIE_link["codeDAISIE"].astype(int)
+
+# Merge DAISIE_occur with DAISIE_link
+DAISIE_merged = pd.merge(left=DAISIE_occur, right=DAISIE_link, how="left", on="codeDAISIE")
 
 
 #### ASFR data
@@ -270,6 +319,9 @@ native_ranges["Native"] = True
 chrome_link = native_ranges.loc[native_ranges['Reference'].str.contains("chrome-extension://", na=False), "Reference"].values[0]
 native_ranges.loc[native_ranges['Reference'] == chrome_link, "Reference"] = "https://catalog.extension.oregonstate.edu/sites/catalog/files/project/pdf/pnw648.pdf"
 
+# Remove the residual index column
+native_ranges.drop(columns=["Unnamed: 0"], inplace=True)
+
 #### Country-name matching
 
 print("Matching country names...")
@@ -316,9 +368,40 @@ native_ranges = pd.merge(
     right_on="NAME",
 )
 
+## DAISIE mostly uses ISO3 but some are non-standard
+
+# Match the countries
+# Merge first based on ISO3
+DAISIE_countries = pd.merge(
+    left=DAISIE_merged,
+    right=countries_match["ISO3"],
+    how="left",
+    left_on="code_region",
+    right_on="ISO3",
+)
+
+# Keep the matches
+DAISIE_countries_matched = DAISIE_countries.loc[DAISIE_countries["ISO3"].notna()]
+
+# Then merge the unamtched based on NAME
+DAISIE_countries_unmatched = DAISIE_countries.loc[DAISIE_countries["ISO3"].isna()]
+DAISIE_countries_unmatched.drop(columns=["ISO3"], inplace=True)
+
+DAISIE_countries_unmatched = pd.merge(
+    left=DAISIE_countries_unmatched,
+    right=countries_match[["NAME", "ISO3"]],
+    how="left",
+    left_on="location",
+    right_on="NAME",
+)
+
+# Combine them back
+
+DAISIE_countries = pd.concat([DAISIE_countries_matched, DAISIE_countries_unmatched]).reset_index(drop=True)
+
 # Match unmatched countries using pycountry
 
-for df in [CABI_countries, ASFR_countries, GBIF_countries, native_ranges]:
+for df in [CABI_countries, ASFR_countries, GBIF_countries, DAISIE_countries, native_ranges]:
     dicts = {}
     ISO3_codes = []
     unique_countries = df.loc[(df["ISO3"].isna()) & (df["location"].notna())].location.unique()
@@ -332,7 +415,7 @@ for df in [CABI_countries, ASFR_countries, GBIF_countries, native_ranges]:
 
 ## Those not found are considered unique countries for now:
 
-for df in [CABI_countries, ASFR_countries, GBIF_countries, native_ranges]:
+for df in [CABI_countries, ASFR_countries, GBIF_countries, DAISIE_countries, native_ranges]:
     df.loc[df["ISO3"] == "Not found", "ISO3"] = df["location"]
 
 ## Update native range locations
@@ -352,6 +435,7 @@ native_ranges.loc[native_ranges.DAISIE_region.isna(), "location"] = native_range
 CABI_countries.drop(columns=["ISO2", "NAME"], inplace=True)
 GBIF_countries.drop(columns=["ISO2", "NAME"], inplace=True)
 ASFR_countries.drop(columns=["ISO2","NAME"], inplace=True)
+DAISIE_countries.drop(columns=["NAME", "code_region"], inplace=True)
 native_ranges = native_ranges[["usageKey","ISO3","location", "Native", "Source", "Reference"]]
 
 # Drop duplicates 
@@ -360,8 +444,9 @@ CABI_countries.drop_duplicates(inplace=True)
 GBIF_countries.drop_duplicates(inplace=True)
 ASFR_countries.drop_duplicates(inplace=True)
 EPPO_countries.drop_duplicates(inplace=True)
+DAISIE_countries.drop_duplicates(inplace=True)
 
-## Add all three individual datasets with ISO3 matched to occurrences folder
+## Add all five individual datasets with ISO3 matched to occurrences folder
 
 print("Writing to csv...")
 
@@ -369,12 +454,14 @@ CABI_countries.to_csv(data_dir + "occurrences/CABI_first_records.csv", index=Fal
 GBIF_countries.to_csv(data_dir + "occurrences/GBIF_first_records.csv", index=False)
 ASFR_countries.to_csv(data_dir + "occurrences/ASFR_first_records.csv", index=False)
 EPPO_countries.to_csv(data_dir + "occurrences/EPPO_first_records.csv", index=False)
+DAISIE_countries.to_csv(data_dir + "occurrences/DAISIE_first_records.csv", index=False)
+
 native_ranges.to_csv(data_dir + "occurrences/native_ranges.csv", index=False)
 
 # Combine all records
 
 all_records = pd.concat(
-    [CABI_countries, GBIF_countries, ASFR_countries, EPPO_countries, native_ranges]
+    [CABI_countries, GBIF_countries, ASFR_countries, EPPO_countries, DAISIE_countries, native_ranges]
 )
 
 # Harmonize data types in all_records
@@ -458,6 +545,8 @@ for i, combo_id in enumerate(multi_record_IDs):
     # Print out every 100 rows so I know how it's going...
     if i % 1000 == 0:
         print(f"Done with {i} of {len(multi_record_IDs)} rows... {round(i/len(multi_record_IDs),2)*100}%")
+
+print("Done with multi-record combos!")
 
 # Save them as a dataframe
 multi_record_df = pd.DataFrame(
