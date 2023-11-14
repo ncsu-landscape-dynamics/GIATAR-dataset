@@ -28,11 +28,13 @@ asfr_list["Date"] = f"{today.year}-{today.month:02d}-{today.day:02d}"
 
 
 # Compare
+try:
+    prev_asfr_list = pd.read_csv(data_dir + "species lists/by_database/asfr_full_list.csv")
+    prev_asfr_list['New'] = False
 
-prev_asfr_list = pd.read_csv(data_dir + "species lists/by_database/asfr_full_list.csv")
-prev_asfr_list['New'] = False
-
-asfr_list = pd.concat([prev_asfr_list,asfr_list]).drop_duplicates(subset=['scientificName'], keep="first")
+    asfr_list = pd.concat([prev_asfr_list,asfr_list]).drop_duplicates(subset=['scientificName'], keep="first")
+except FileNotFoundError:
+    pass
 
 print("How many new (TRUE) and old (FALSE) records?")
 print(asfr_list['New'].value_counts())

@@ -41,10 +41,13 @@ cabi_list['Date'] = f"{today.year}-{today.month:02d}-{today.day:02d}"
 
 # Compare
 
-prev_cabi_list = pd.read_csv(data_dir + "species lists/by_database/cabi_full_list.csv")
-prev_cabi_list['New'] = False
+try:
+    prev_cabi_list = pd.read_csv(data_dir + "species lists/by_database/cabi_full_list.csv")
+    prev_cabi_list['New'] = False
 
-cabi_list = pd.concat([prev_cabi_list,cabi_list]).drop_duplicates(subset=['URL'], keep="first")
+    cabi_list = pd.concat([prev_cabi_list,cabi_list]).drop_duplicates(subset=['URL'], keep="first")
+except: 
+    pass
 
 print("How many new (TRUE) and old (FALSE) records?")
 print(cabi_list['New'].value_counts())

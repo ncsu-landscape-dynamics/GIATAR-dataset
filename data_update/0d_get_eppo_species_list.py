@@ -51,11 +51,13 @@ eppo_list['New'] = True
 eppo_list["Date"] = f"{today.year}-{today.month:02d}-{today.day:02d}"
 
 # Compare
+try:
+    prev_eppo_list = pd.read_csv(data_dir + "species lists/by_database/eppo_full_list.csv")
+    prev_eppo_list['New'] = False
 
-prev_eppo_list = pd.read_csv(data_dir + "species lists/by_database/eppo_full_list.csv")
-prev_eppo_list['New'] = False
-
-eppo_list = pd.concat([prev_eppo_list,eppo_list]).drop_duplicates(subset=['code'], keep="first")
+    eppo_list = pd.concat([prev_eppo_list,eppo_list]).drop_duplicates(subset=['code'], keep="first")
+except FileNotFoundError:
+    pass
 
 print("How many new (TRUE) and old (FALSE) records?")
 print(eppo_list['New'].value_counts())

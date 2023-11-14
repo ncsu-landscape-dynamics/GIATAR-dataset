@@ -18,11 +18,11 @@ data_dir = os.getenv("DATA_PATH")
 # Get today's date
 today = date.today()
 
-# Download the latest version of input_taxon.csv (save as DAISIE_taxon.csv) 
+# Download the latest version of input_taxon.csv and save to species lists/by_database/input_taxon.csv
 # from https://github.com/trias-project/daisie-checklist/tree/master/data/raw (if available)
 # If not, skip this script!
 
-daisie_list = pd.read_csv(data_dir + "species lists/by_database/DAISIE_taxon.csv")
+daisie_list = pd.read_csv(data_dir + "species lists/by_database/input_taxon.csv")
 
 daisie_list['New'] = True
 daisie_list["Date"] = f"{today.year}-{today.month:02d}-{today.day:02d}"
@@ -33,10 +33,13 @@ daisie_list['scientificName'] = daisie_list['genus'] + " " + daisie_list['specie
 
 # Compare
 
-prev_daisie_list = pd.read_csv(data_dir + "species lists/by_database/daisie_full_list.csv")
-prev_daisie_list['New'] = False
+try: 
+    prev_daisie_list = pd.read_csv(data_dir + "species lists/by_database/daisie_full_list.csv")
+    prev_daisie_list['New'] = False
 
-daisie_list = pd.concat([prev_daisie_list,daisie_list]).drop_duplicates(subset=['scientificName'], keep="first")
+    daisie_list = pd.concat([prev_daisie_list, daisie_list]).drop_duplicates(subset=['scientificName'], keep="first")
+except FileNotFoundError:
+    pass
 
 print("How many new (TRUE) and old (FALSE) records?")
 print(daisie_list['New'].value_counts())

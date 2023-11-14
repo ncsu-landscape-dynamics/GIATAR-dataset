@@ -72,22 +72,22 @@ daisie_species.rename(columns={"scientificName": "species", "idspecies": "codeDA
 # Get existing GBIF matches (if they already exist)
 try: 
     asfr_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/asfr_gbif.csv", dtype={"usageKey": "str"})
-except:
+except FileNotFoundError:
     asfr_gbif = pd.DataFrame(columns=["species", "usageKey", "New", "Date"])
 
 try:
     cabi_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/cabi_gbif.csv", dtype={"usageKey": "str"})
-except:
+except FileNotFoundError:
     cabi_gbif = pd.DataFrame(columns=["codeCABI", "usageKey", "New", "Date"])
 
 try:
     eppo_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/eppo_gbif.csv", dtype={"usageKey": "str"})
-except:
+except FileNotFoundError:
     eppo_gbif = pd.DataFrame(columns=["codeEPPO", "usageKey", "New", "Date"])
 
 try: 
     daisie_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/daisie_gbif.csv", dtype={"usageKey": "str"})
-except:
+except FileNotFoundError:
     daisie_gbif = pd.DataFrame(columns=["codeDAISIE", "usageKey", "New", "Date"])
 
 asfr_gbif["New"] = False
@@ -108,7 +108,7 @@ daisie_match = daisie_gbif.loc[~((daisie_gbif.usageKey.isna()) | (daisie_gbif.us
 cabi_new = cabi_species.loc[~cabi_species["codeCABI"].isin(cabi_match["codeCABI"])]
 asfr_new = asfr_species.loc[~asfr_species["species"].isin(asfr_match["species"])]
 eppo_new = eppo_species.loc[~eppo_species["codeEPPO"].isin(eppo_match["codeEPPO"])]
-daisie_new = daisie_species.loc[~daisie_species["species"].isin(daisie_match["codeDAISIE"])]
+daisie_new = daisie_species.loc[~daisie_species["codeDAISIE"].isin(daisie_match["codeDAISIE"])]
 
 # Query GBIF for new names
 
@@ -162,7 +162,7 @@ try:
     unmatched_records = pd.read_csv(data_dir + "species lists/gbif_matched/all_unmatched_gbif.csv")
     unmatched_records["New"] = False
     unmatched_records = pd.concat([unmatched_records, new_unmatched], ignore_index=True)
-except:
+except FileNotFoundError:
     unmatched_records = new_unmatched
 
 unmatched_records.to_csv(data_dir + "species lists/gbif_matched/all_unmatched_gbif.csv", index=False)

@@ -161,6 +161,8 @@ DAISIE_link["codeDAISIE"] = DAISIE_link["codeDAISIE"].astype(int)
 # Merge DAISIE_occur with DAISIE_link
 DAISIE_merged = pd.merge(left=DAISIE_occur, right=DAISIE_link, how="left", on="codeDAISIE")
 
+# Drop the column codeDAISIE
+DAISIE_merged.drop(columns=["codeDAISIE"], inplace=True)
 
 #### ASFR data
 
