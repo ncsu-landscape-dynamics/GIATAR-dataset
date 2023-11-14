@@ -181,10 +181,13 @@ def eppo_query_wrapper(eppo_species, query, token, append=False):
         section_table["Date"] = f"{today.year}-{today.month:02d}-{today.day:02d}"
 
         if append == True:
-            prev_table = pd.read_csv(f"{data_dir}/EPPO data/EPPO_{query[1:]}.csv")
-            section_table = pd.concat(
-                [prev_table, section_table], ignore_index=True
-            ).drop_duplicates(subset=section_table.columns.difference(["Date"]))
+            try:
+                prev_table = pd.read_csv(f"{data_dir}/EPPO data/EPPO_{query[1:]}.csv")
+                section_table = pd.concat(
+                    [prev_table, section_table], ignore_index=True
+                ).drop_duplicates(subset=section_table.columns.difference(["Date"]))
+            except FileNotFoundError:
+                print(f"No previous {query} data found.")
 
         section_table.to_csv(f"{data_dir}/EPPO data/EPPO_{query[1:]}.csv", index=False)
 
@@ -715,8 +718,11 @@ def clean_DAISIE_year(year):
             try:
                 first_year = min(years)
             except:
-                # Use the map for the remaining irregular names
-                first_year = daisie_year_map[year]
+                try:
+                    # Use the map for the remaining irregular names
+                    first_year = daisie_year_map[year]
+                except:
+                    first_year = None
     else: 
         first_year = None
     return first_year

@@ -124,8 +124,9 @@ DAISIE_occur = pd.read_csv(data_dir + "DAISIE data/DAISIE_distribution.csv", dty
 # code_region
 # region_country as location
 # DAISIE_idspecies as codeDAISIE
-DAISIE_occur = DAISIE_occur[["DAISIE_idspecies", "start_year", "end_year", "code_region", "region_country"]]
-DAISIE_occur.rename(columns={"region_country": "location", "DAISIE_idspecies":"codeDAISIE"}, inplace=True)
+# source as Reference
+DAISIE_occur = DAISIE_occur[["DAISIE_idspecies", "start_year", "end_year", "code_region", "region_country", "source"]]
+DAISIE_occur.rename(columns={"region_country": "location", "DAISIE_idspecies":"codeDAISIE", "source":"Reference"}, inplace=True)
 
 # codeDAISIE as integer to merge with the link file
 DAISIE_occur["codeDAISIE"] = DAISIE_occur["codeDAISIE"].astype(int)
@@ -133,6 +134,13 @@ DAISIE_occur["codeDAISIE"] = DAISIE_occur["codeDAISIE"].astype(int)
 # If there's a value for start_year, set year to start_year. If start_year is NA, set year to end_year
 DAISIE_occur["text_year"] = DAISIE_occur["start_year"]
 DAISIE_occur.loc[DAISIE_occur["text_year"].isna(), "text_year"] = DAISIE_occur.loc[DAISIE_occur["text_year"].isna(), "end_year"]
+
+# Type == "First report"
+# Source == "DAISIE"
+# Native == False
+DAISIE_occur["Type"] = "First report"
+DAISIE_occur["Source"] = "DAISIE"
+DAISIE_occur["Native"] = False
 
 # DAISIE years contain a mix of values - some are single years, some are ranges
 # Some include descriptions like "before 2000" or "probabbly around 1960 by symptoms"
@@ -143,14 +151,16 @@ DAISIE_occur["year"] = DAISIE_occur["text_year"].apply(clean_DAISIE_year)
 # Drop start_year, end_year, and text_year columns
 DAISIE_occur.drop(columns=["start_year", "end_year", "text_year"], inplace=True)
 
-# Type == "First report"
-# Source == "DAISIE"
-# Reference == None
-# Native == False
-DAISIE_occur["Type"] = "First report"
-DAISIE_occur["Source"] = "DAISIE"
-DAISIE_occur["Reference"] = None
-DAISIE_occur["Native"] = False
+# If year is None or NA, set Type to "First Reference"
+DAISIE_occur.loc[DAISIE_occur["year"].isna(), "Type"] = "First Reference"
+
+# Then apply clean_DAISIE_year to the Reference column
+DAISIE_occur.loc[DAISIE_occur["year"].isna(), "year"] = DAISIE_occur.loc[DAISIE_occur["year"].isna(), "Reference"].apply(clean_DAISIE_year)
+
+# If the year is still NA, set Type to "Not dated" and year to 2019 (DAISIE's last updated date)
+DAISIE_occur.loc[DAISIE_occur["year"].isna(), "Type"] = "Not dated"
+DAISIE_occur.loc[DAISIE_occur["year"].isna(), "year"] = 2019
+
 
 # DAISIE link
 
@@ -450,7 +460,7 @@ DAISIE_countries.drop_duplicates(inplace=True)
 
 ## Add all five individual datasets with ISO3 matched to occurrences folder
 
-print("Writing to csv...")
+print("Writing country-matches to csv...")
 
 CABI_countries.to_csv(data_dir + "occurrences/CABI_first_records.csv", index=False)
 GBIF_countries.to_csv(data_dir + "occurrences/GBIF_first_records.csv", index=False)
