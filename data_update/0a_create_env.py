@@ -11,8 +11,8 @@ Description: Create the .env file with workspace-relevant information
 
 # Where the files will be read/written
 
-drive_letter = "Q:"
-data_dir = "/Shared drives/Pandemic Data/Invasive database/"
+drive_letter = "C:"
+data_dir = "Users\tworm\Documents\GitHub\GITAR-database\data_update"
 
 # Access information for the database on Digital Ocean
 
@@ -52,4 +52,3 @@ with open(".env", "w") as f:
     f.write(f"GBIF_OBS_UPDATED='{gbif_obs_last_update}'\n")
     f.write(f"EPPO_REP_UPDATED='{gbif_obs_last_update}'\n")
     f.close()
-
