@@ -29,7 +29,7 @@ import dotenv
 
 
 #### DATA PATH ####
-data_path = r"H:\Shared drives\Pandemic Data\Invasive database\Database"
+data_path = r"H:\Shared drives\Pandemic Data\Invasive database\Database\\"
 
 google_root = "H:"
 # if .env file exists, get data_path from .env file
@@ -95,7 +95,7 @@ def get_usageKey(species_name):
         ].values[0]
     elif species_name in invasive_all_source["usageKey"].values:
         return species_name
-    elif species_name in invasive_all_source["speciesGBIF"].values:
+    elif species_name in invasive_all_source["canonicalName"].values:
         return invasive_all_source.loc[
             invasive_all_source["speciesGBIF"] == species_name, "usageKey"
         ].values[0]
@@ -235,12 +235,13 @@ def get_all_introductions(
         return df[~df["ISO3"].isin(["ZZ", "XL", "XZ"])]
 
 
-def get_ecology(species_name):
+def get_ecology(species_name, check_exists=False):
     # os.chdir(f"{google_root}\Shared drives\Pandemic Data\Invasive database\Database")
-    if not check_species_exists(species_name):
-        raise KeyError(
-            "Species not in Database. Try checking master list with get_all_species()"
-        )
+    if check_exists == True:
+        if not check_species_exists(species_name):
+            raise KeyError(
+                "Species not in Database. Try checking master list with get_all_species()"
+            )
     result_dict = {}
 
     usageKey = get_usageKey(species_name)
@@ -295,13 +296,13 @@ def get_ecology(species_name):
     return result_dict
 
 
-def get_hosts_and_vectors(species_name):
-    # os.chdir(f"{google_root}\Shared drives\Pandemic Data\Invasive database\Database")
-
-    if not check_species_exists(species_name):
-        raise KeyError(
-            "Species not in Database. Try checking master list with get_all_species()"
-        )
+def get_hosts_and_vectors(species_name, check_exists=False):
+    os.chdir(data_path)
+    if check_exists == True:
+        if not check_species_exists(species_name):
+            raise KeyError(
+                "Species not in Database. Try checking master list with get_all_species()"
+            )
 
     usageKey = get_usageKey(species_name)
 
@@ -401,12 +402,16 @@ def get_species_list(
     return usageKey_list
 
 
-def get_native_ranges(species_name, ISO3=None):
+def get_native_ranges(species_name, ISO3=None, check_exists=False):
     # as default, takes usageKey or species name as string and returns as list of native ISO3 codes
     # if ISO3 is not None, returns True or False if species is native to ISO3 - takes a list of ISO3 as input
 
     # os.chdir(f"{google_root}\Shared drives\Pandemic Data\Invasive database\Database")
-
+    if check_exists == True:
+        if not check_species_exists(species_name):
+            raise KeyError(
+                "Species not in Database. Try checking master list with get_all_species()"
+            )
     if "native_ranges" not in globals():
         global native_ranges
         native_ranges = pd.read_csv(
@@ -527,7 +532,13 @@ def get_native_ranges(species_name, ISO3=None):
             return None
 
 
-def get_common_names(species_name):
+def get_common_names(species_name, check_exists=False):
+    if check_exists == True:
+        if not check_species_exists(species_name):
+            raise KeyError(
+                "Species not in Database. Try checking master list with get_all_species()"
+            )
+
     usageKey = get_usageKey(species_name)
 
     DAISIE_vernacular = pd.read_csv(
