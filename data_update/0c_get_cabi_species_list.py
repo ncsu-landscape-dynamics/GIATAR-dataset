@@ -49,6 +49,12 @@ try:
 except: 
     pass
 
+# Exclude the datasheets in the cabi_exclude.csv file
+# Not species - pathways, countries, etc.
+
+cabi_exclude = pd.read_csv(data_dir + "species lists/by_database/cabi_exclude.csv")
+cabi_list = cabi_list[~cabi_list["Scientific name"].isin(cabi_exclude['species'])]
+
 print("How many new (TRUE) and old (FALSE) records?")
 print(cabi_list['New'].value_counts())
 
