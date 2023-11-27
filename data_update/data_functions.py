@@ -722,9 +722,9 @@ def clean_DAISIE_year(year):
                     # Use the map for the remaining irregular names
                     first_year = daisie_year_map[year]
                 except:
-                    first_year = None
+                    first_year = 2019
     else: 
-        first_year = None
+        first_year = 2019
     return first_year
 
 
