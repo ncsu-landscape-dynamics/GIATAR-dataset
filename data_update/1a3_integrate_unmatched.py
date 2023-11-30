@@ -26,6 +26,8 @@ today = date.today()
 cabi_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/cabi_gbif.csv")
 eppo_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/eppo_gbif.csv")
 asfr_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/asfr_gbif.csv")
+
+"""
 #daisie_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/daisie_gbif.csv")
 # Keep only usageKeys that are not NA
 
@@ -36,14 +38,13 @@ daisie_gbif = daisie_gbif.loc[~daisie_gbif["usageKey"].isna()].reset_index(drop=
 
 # To handle the mix of numeric and text usageKeys
 # turn usageKey into an integer, then a string
-
+"""
 cabi_gbif["usageKey"] = cabi_gbif["usageKey"].astype("Int64").astype(str)
 eppo_gbif["usageKey"] = eppo_gbif["usageKey"].astype("Int64").astype(str)
 asfr_gbif["usageKey"] = asfr_gbif["usageKey"].astype("Int64").astype(str)
-daisie_gbif["usageKey"] = daisie_gbif["usageKey"].astype("Int64").astype(str)
 
 # Bring in the newly matched data
-
+"""
 unmatched_records = pd.read_csv(
     data_dir + "species lists/gbif_matched/unmatched_records_usagekey_uid.csv"
 ).rename(columns={"usagekey": "usageKey"})
@@ -94,7 +95,7 @@ asfr_gbif = pd.concat(
     ],
     ignore_index=True,
 )
-
+"""
 # Drop duplicates for each source, keeping the first
 
 cabi_gbif = cabi_gbif.drop_duplicates(subset=["codeCABI"], keep="first")
@@ -108,10 +109,11 @@ eppo_gbif.to_csv(data_dir + "species lists/gbif_matched/eppo_gbif.csv", index=Fa
 asfr_gbif.to_csv(data_dir + "species lists/gbif_matched/asfr_gbif.csv", index=False)
 
 # Report back
-
+"""
 print(
     f"Added {len(cabi_gbif.loc[cabi_gbif['usageKey'].str.startswith('XX')].index)} CABI species, "
     f"{len(eppo_gbif.loc[eppo_gbif['usageKey'].str.startswith('XX')].index)} EPPO species, "
     f"and {len(asfr_gbif.loc[asfr_gbif['usageKey'].str.startswith('XX')].index)} ASFR species."
     f"and {len(daisie_gbif.loc[daisie_gbif['usageKey'].str.startswith('XX')].index)} DAISIE species."
 )
+"""
