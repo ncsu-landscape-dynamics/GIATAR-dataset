@@ -14,7 +14,7 @@ import re
 
 sys.path.append(os.getcwd())
 
-from data_update.data_functions import get_ISO3, clean_DAISIE_year
+from data_update.data_functions import get_ISO3, clean_DAISIE_year, match_countries
 
 # Get data dir - invasive database folder
 dotenv.load_dotenv(".env")
@@ -413,22 +413,20 @@ DAISIE_countries = pd.concat([DAISIE_countries_matched, DAISIE_countries_unmatch
 
 # Match unmatched countries using pycountry
 
-for df in [CABI_countries, ASFR_countries, GBIF_countries, DAISIE_countries, native_ranges]:
-    dicts = {}
-    ISO3_codes = []
-    unique_countries = df.loc[(df["ISO3"].isna()) & (df["location"].notna())].location.unique()
-    for country in unique_countries:
-        ISO3_codes.append(get_ISO3(country))
-    for i in range(len(unique_countries)):
-        dicts[unique_countries[i]] = ISO3_codes[i]
-    df.loc[df["ISO3"].isna(), "ISO3"] = df.loc[df["ISO3"].isna()].apply(
-        lambda x: dicts.get(x.location), axis=1
-    )
+print("Mapping CABI countries...")
+CABI_countries = match_countries(CABI_countries)
 
-## Those not found are considered unique countries for now:
+print("Mapping GBIF countries...")
+GBIF_countries = match_countries(GBIF_countries)
 
-for df in [CABI_countries, ASFR_countries, GBIF_countries, DAISIE_countries, native_ranges]:
-    df.loc[df["ISO3"] == "Not found", "ISO3"] = df["location"]
+print("Mapping ASFR countries...")
+ASFR_countries = match_countries(ASFR_countries)
+
+print("Mapping DAISIE countries...")
+DAISIE_countries = match_countries(DAISIE_countries)
+
+print("Mapping native range countries...")
+native_ranges = match_countries(native_ranges)
 
 ## Update native range locations
 # If DAISIE_region is not na, location = bioregion - DAISIE_region

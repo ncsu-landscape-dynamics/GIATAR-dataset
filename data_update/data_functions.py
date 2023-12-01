@@ -745,8 +745,90 @@ def get_ISO3(loc):
                     ].alpha_3
                 except LookupError:
                     return "Not found"
+            elif " (" in loc:
+                try: 
+                    return pycountry.countries.search_fuzzy(loc.split(" (")[0])[0].alpha_3
+                except LookupError:
+                    return "Not found"
             else:
                 return "Not found"
     else:
         return np.nan
 
+
+# Create a function that cleans the ASFR countries
+
+# Countries not mapped correctly to ISO3 due to
+# naming conventions, sub-national locations
+missed_countries_dict = {
+    'Congo, Democratic Republic of the': "COD",
+    'Congo, Republic of the': "COG",
+    'Congo, Republic of': "COG",
+    'Virgin Islands, US': "VIR",
+    'Trinidad-Tobago': "TTO",
+    'Laos': "LAO",
+    'Macau': "MAC",
+    'Saint Paul (France)': "FRA",
+    'USACanada': ["USA", "CAN"],
+    "Czechoslovakia": "CZE",
+    "England": "GBR",
+    "Scotland": "GBR",
+    "Bonaire, Saint Eustatius and Saba": "BES",
+    "Bosnia-Herzegovina": "BIH",
+    'Gilbraltar': "GIB",
+    'Russian Far East': "RUS",
+    'European part of Russia': "RUS",
+    'Union of Soviet Socialist Republics': "RUS",
+    'Northwestern U.S.A.': 'USA',
+    'Southwestern U.S.A.': 'USA',
+    'Southeastern U.S.A.': 'USA',
+    'Northeastern U.S.A.': 'USA',
+    'South-Central U.S.A.': 'USA',
+    'North-Central U.S.A.': 'USA',
+    'Western Canada': 'CAN', 
+    'Eastern Canada': 'CAN'
+}
+
+def clean_country_name(country):
+    # For cleaning unmatched ISO3 codes
+    if len(country) > 3:
+        # First check if it is in the missed countries dict
+        try:
+            return missed_countries_dict[country]
+        except KeyError:
+            # Clean the country name
+            # Replace "Uk" as a word with "United Kingdom"
+            country = re.sub("\\bUk\\b", " United Kingdom", country)
+            # Split on ", " or " and " if "island" is not in country
+            if (", " in country) | (" and " in country) & ("island" not in country.lower()):
+                country_list = re.split(", | and ", country)
+                # Search for the ISO code for each country in the list
+                ISO3_list = [get_ISO3(country) for country in country_list]
+                return ISO3_list
+            else:
+                return country
+    else:
+        return country
+
+# Wrapper function to match countries
+
+def match_countries(df):
+    dicts = {}
+    ISO3_codes = []
+    unique_countries = df.loc[(df["ISO3"].isna()) & (df["location"].notna())].location.unique()
+    for country in unique_countries:
+        ISO3_codes.append(get_ISO3(country))
+    for i in range(len(unique_countries)):
+        dicts[unique_countries[i]] = ISO3_codes[i]
+    df.loc[df["ISO3"].isna(), "ISO3"] = df.loc[df["ISO3"].isna()].apply(
+        lambda x: dicts.get(x.location), axis=1
+    )
+    # Apply the clean country name function for common isuses
+    df.loc[df["ISO3"] == "Not found", "ISO3"] = df.loc[df["ISO3"] == "Not found"].apply(
+        lambda x: clean_country_name(x.location), axis=1
+    )
+    # Explode any rows that may contain lists
+    df = df.explode("ISO3")
+    print("The following location names remain unmatched:")
+    print(df.loc[df["ISO3"].str.len()>3].ISO3.unique())
+    return df
