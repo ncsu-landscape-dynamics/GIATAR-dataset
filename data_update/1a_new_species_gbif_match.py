@@ -39,21 +39,17 @@ daisie_species = pd.read_csv(
     usecols=["scientificName", "idspecies"],
 )
 
-# Read the most recent version of these two: ASFR (Seebens' Alien Species First Records), CABI export
+# ASFR
 
 asfr_species = pd.read_csv(
-    sorted(
-        glob(data_dir + "species lists/by_database/asfr_full_list.csv"),
-        key=os.path.getmtime,
-    )[-1],
-    usecols=["scientificName"],
-).drop_duplicates()
+    data_dir + "species lists/by_database/asfr_full_list.csv",
+    usecols=["TaxonName"]
+    )
+
+# CABI
 
 cabi_species = pd.read_csv(
-    sorted(
-        glob(data_dir + "species lists/by_database/cabi_full_list.csv"),
-        key=os.path.getmtime,
-    )[-1],
+    data_dir + "species lists/by_database/cabi_full_list.csv",
     usecols=["Scientific name", "URL"],
 )
 
@@ -63,7 +59,7 @@ cabi_species["codeCABI"] = cabi_species["codeCABI"].astype("int")
 cabi_species.drop(columns="URL", inplace=True)
 
 cabi_species.rename(columns={"Scientific name": "species"}, inplace=True)
-asfr_species.rename(columns={"scientificName": "species"}, inplace=True)
+asfr_species.rename(columns={"TaxonName": "species"}, inplace=True)
 eppo_species.rename(columns={"fullname": "species", "code": "codeEPPO"}, inplace=True)
 daisie_species.rename(columns={"scientificName": "species", "idspecies": "codeDAISIE"}, inplace=True)
 

@@ -181,12 +181,11 @@ print("Reading and cleaning ASFR data...")
 # Read file and set column names
 ASFR_occur = pd.read_csv(
     data_dir + "species lists/by_database/AlienSpeciesFirstRecord.csv",
-    usecols=["scientificName", "Region", "FirstRecord", "Source"],
-    # usageKey column as string
-    dtype={"usageKey": "str"},
+    usecols=["TaxonName", "Region", "FirstRecord", "Source"],
 )
+
 ASFR_occur.rename(
-    columns={"scientificName": "species", "Region": "location", "FirstRecord": "year", "Source": "Reference"},
+    columns={"TaxonName": "species", "Region": "location", "FirstRecord": "year", "Source": "Reference"},
     inplace=True,
 )
 
