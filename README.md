@@ -1,5 +1,5 @@
-# GITAR-database
-Global Invasive Traits and Records Database
+# GIATAR-database
+Global Invasive and Alien Traits and Records Database
 
 
 ## Intro paragraphs
