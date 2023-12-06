@@ -1,3 +1,10 @@
+###
+# File: data_update/1a2_check_alternate_sources.R
+# Author: Thom Worm
+# Date created: 2023-04-14
+# Description: Check alternate sources for species names that were not matched to GBIF
+###
+
 history(Inf)
 library(tidyverse)
 library(rgbif) # taxonomic package
@@ -5,21 +12,15 @@ library(taxize) # taxonomic package
 library(magrittr)
 library(dotenv)
 
-
-
 dotenv::load_dot_env()
 data_path <- Sys.getenv("DATA_PATH")
 
-data_path = paste0(data_path,'/species lists/gbif_matched')
+data_path = paste0(data_path,"/species lists/gbif_matched")
 setwd(data_path)
 
-setwd('G:/GITAR/Database/species lists/gbif_matched')
-cabi_gbif <- read_csv("cabi_gbif.csv")
-eppo_gbif <- read_csv("eppo_gbif.csv")
-asfr_gbif <- read_csv("asfr_gbif.csv")
-
-
-
+cabi_gbif <- read_csv("cabi_gbif.csv", col_types = cols(.default = "c"))
+eppo_gbif <- read_csv("eppo_gbif.csv", col_types = cols(.default = "c"))
+asfr_gbif <- read_csv("asfr_gbif.csv", col_types = cols(.default = "c"))
 
 # Combine the data frames into a list for easy iteration
 datasets <- list(cabi_gbif, eppo_gbif, asfr_gbif)
