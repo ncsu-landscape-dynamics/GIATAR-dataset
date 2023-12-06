@@ -28,18 +28,22 @@ today = date.today()
 
 # Start with master list
 
-species_list = pd.read_csv(data_dir + "species lists/invasive_all_source.csv")
+species_list = pd.read_csv(data_dir + "species lists/invasive_all_source.csv", dtype={"usageKey":str})
 
 # Get keys that belong to new species (need full history)
-new_keys = pd.read_csv(data_dir + "species lists/new/new_usageKeys.csv")
+new_keys = pd.read_csv(data_dir + "species lists/new/new_usageKeys.csv", dtype={"usageKey":str})
 
-# Only keep usageKeys that don't start with XX
-new_keys = new_keys[~new_keys['usageKey'].str.startswith('XX')]
-new_keys = new_keys[~new_keys['usageKey'].str.startswith('Xx')]
+# Only keep usageKeys that don't start with X
+new_keys = new_keys[~new_keys['usageKey'].str.startswith('X')]
+species_list = species_list[~species_list['usageKey'].str.startswith('X')]
 
 # Get list of species that are new
 new_invasive_species = species_list.loc[species_list['usageKey'].isin(new_keys['usageKey']), "usageKey"].unique()
 prev_species = species_list.loc[~species_list['usageKey'].isin(new_keys['usageKey']), "usageKey"].unique()
+
+# Convert all usageKeys to integers
+new_invasive_species = [int(x) for x in new_invasive_species]
+prev_species = [int(x) for x in prev_species]
 
 # For previous species, we only need new data
 # Get years for which data is needed
@@ -104,6 +108,10 @@ all_counts = (
     .reset_index()
 )
 
+# Set species datatype to integer and then string
+
+all_counts["species"] = all_counts["species"].astype(int).astype(str)
+
 # Save full response file to CSV (just in case it breaks!)
 
 print("Saving preliminary file...")
@@ -144,12 +152,17 @@ first_records.to_csv(data_dir + "GBIF data/new_GBIF_first_records.csv", index=Fa
 
 # Consolidate with and replace previous first records
 
-previous_first_records = pd.read_csv(data_dir + "GBIF data/GBIF_first_records.csv")
+previous_first_records = pd.read_csv(data_dir + "GBIF data/GBIF_first_records.csv", dtype={"usageKey":str})
+
 first_records = (
     pd.concat([previous_first_records, first_records])
     .reset_index(drop=True)
     .drop_duplicates()
 )
+
+# Set species datatype to integer and then string (again)
+
+first_records["species"] = first_records["species"].astype(int).astype(str)
 
 # Regroup by species and country to get the earliest first record
 

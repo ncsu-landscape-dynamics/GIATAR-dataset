@@ -31,18 +31,25 @@ today = date.today()
 
 # Bring back in the new datasets
 
-cabi_new = pd.read_csv(data_dir + "species lists/gbif_matched/cabi_gbif.csv")
+cabi_new = pd.read_csv(data_dir + "species lists/gbif_matched/cabi_gbif.csv", dtype={"usageKey":str})
 cabi_new = cabi_new.loc[cabi_new["New"]==True]
 
-eppo_new = pd.read_csv(data_dir + "species lists/gbif_matched/eppo_gbif.csv")
+eppo_new = pd.read_csv(data_dir + "species lists/gbif_matched/eppo_gbif.csv", dtype={"usageKey":str})
 eppo_new = eppo_new.loc[eppo_new["New"]==True]
 
-asfr_new = pd.read_csv(data_dir + "species lists/gbif_matched/asfr_gbif.csv")
+asfr_new = pd.read_csv(data_dir + "species lists/gbif_matched/asfr_gbif.csv", dtype={"usageKey":str})
 asfr_new = asfr_new.loc[asfr_new["New"]==True]
+
+daisie_new = pd.read_csv(data_dir + "species lists/gbif_matched/daisie_gbif.csv", dtype={"usageKey":str})
+daisie_new = daisie_new.loc[daisie_new["New"]==True]
 
 # All ASFR assumed invasive
 
 asfr_new.to_csv(data_dir + "species lists/new/asfr_new.csv", index=False)
+
+# All DAISIE assumed invasive
+
+daisie_new.to_csv(data_dir + "species lists/new/daisie_new.csv", index=False)
 
 # EPPO - has categorization
 
@@ -53,7 +60,7 @@ eppo_new["invasive"] = np.where(eppo_new["categorization"].map(len) > 0, True, F
 # Append and write to csv
 
 eppo_gbif_inv = pd.read_csv(
-    data_dir + "species lists/gbif_matched/eppo_gbif_with_categ.csv")
+    data_dir + "species lists/gbif_matched/eppo_gbif_with_categ.csv", dtype={"usageKey":str})
 eppo_gbif_inv["New"] = False
 
 eppo_gbif_inv = pd.concat([eppo_gbif_inv, eppo_new], ignore_index=True)
@@ -67,21 +74,17 @@ eppo_gbif_inv.to_csv(
 
 eppo_new.to_csv(data_dir + "species lists/new/eppo_new.csv", index=False)
 
-# CABI check will happen elsewhere
+# CABI check occurs against the webscraped datasheet type (1 time)
 
 cabi_new.to_csv(data_dir + "species lists/new/cabi_new.csv", index=False)
 
 # Export a list (as .csv) of all new species usageKeys (to run the full EPPO and CABI queries on)
 
 new_species = pd.concat([cabi_new, eppo_new, asfr_new], ignore_index=True)
-new_species.loc[new_species["usageKey"].notna()]["usageKey"].to_csv(
+new_species.loc[new_species["usageKey"].notna()]["usageKey"].drop_duplicates().to_csv(
     data_dir + "species lists/new/new_usageKeys.csv", index=False
 )
 
 print(
     f"Exported {len(new_species.loc[new_species['usageKey'].notna()])} new usageKeys, including"
     f" {len(new_species.loc[new_species['invasive']==True])} invasive species.")
-
-
-# Next:
-# CABI to check invasive and get data

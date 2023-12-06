@@ -18,7 +18,7 @@ from datetime import date
 
 import pycountry
 
-# import spacy
+import spacy
 import regex as re
 
 import os
@@ -181,10 +181,13 @@ def eppo_query_wrapper(eppo_species, query, token, append=False):
         section_table["Date"] = f"{today.year}-{today.month:02d}-{today.day:02d}"
 
         if append == True:
-            prev_table = pd.read_csv(f"{data_dir}/EPPO data/EPPO_{query[1:]}.csv")
-            section_table = pd.concat(
-                [prev_table, section_table], ignore_index=True
-            ).drop_duplicates(subset=section_table.columns.difference(["Date"]))
+            try:
+                prev_table = pd.read_csv(f"{data_dir}/EPPO data/EPPO_{query[1:]}.csv")
+                section_table = pd.concat(
+                    [prev_table, section_table], ignore_index=True
+                ).drop_duplicates(subset=section_table.columns.difference(["Date"]))
+            except FileNotFoundError:
+                print(f"No previous {query} data found.")
 
         section_table.to_csv(f"{data_dir}/EPPO data/EPPO_{query[1:]}.csv", index=False)
 
@@ -688,6 +691,43 @@ def CABI_sections_to_tables(CABI_tables, append=False):
     return None
 
 
+### DAISIE functions
+
+daisie_year_map = {
+    '90`s ':"1990",
+    'Unknown': None,
+    'unknown': None, 
+    'since long': "700",
+    'Since long': "700",
+    '20. century':"1950",
+    '19th century':"1850"
+}
+
+def clean_DAISIE_year(year):
+    # DAISIE years contain a mix of values - some are single years, some are ranges
+    # Some include descriptions like "before 2000" or "probabbly around 1960 by symptoms"
+    # Some are missing values (?, 0, .)
+    # Function to clean each value to represent a single year as a float
+    if len(str(year)) > 3:
+        try:
+            first_year = float(year)
+        except:
+            # Look for all 4 digit numbers in the string and take the lowest value
+            # If a year is a range, take the start year. If a year is a description, take the year from the description. 
+            years = re.findall(r"[0-9]{4}", year)
+            try:
+                first_year = min(years)
+            except:
+                try:
+                    # Use the map for the remaining irregular names
+                    first_year = daisie_year_map[year]
+                except:
+                    first_year = None
+    else: 
+        first_year = None
+    return first_year
+
+
 #### Utility functions
 
 # Handle NAs with pycountry fuzzy search
@@ -705,7 +745,90 @@ def get_ISO3(loc):
                     ].alpha_3
                 except LookupError:
                     return "Not found"
+            elif " (" in loc:
+                try: 
+                    return pycountry.countries.search_fuzzy(loc.split(" (")[0])[0].alpha_3
+                except LookupError:
+                    return "Not found"
             else:
                 return "Not found"
     else:
         return np.nan
+
+
+# Create a function that cleans the ASFR countries
+
+# Countries not mapped correctly to ISO3 due to
+# naming conventions, sub-national locations
+missed_countries_dict = {
+    'Congo, Democratic Republic of the': "COD",
+    'Congo, Republic of the': "COG",
+    'Congo, Republic of': "COG",
+    'Virgin Islands, US': "VIR",
+    'Trinidad-Tobago': "TTO",
+    'Laos': "LAO",
+    'Macau': "MAC",
+    'Saint Paul (France)': "FRA",
+    'USACanada': ["USA", "CAN"],
+    "Czechoslovakia": "CZE",
+    "England": "GBR",
+    "Scotland": "GBR",
+    "Bonaire, Saint Eustatius and Saba": "BES",
+    "Bosnia-Herzegovina": "BIH",
+    'Gilbraltar': "GIB",
+    'Russian Far East': "RUS",
+    'European part of Russia': "RUS",
+    'Union of Soviet Socialist Republics': "RUS",
+    'Northwestern U.S.A.': 'USA',
+    'Southwestern U.S.A.': 'USA',
+    'Southeastern U.S.A.': 'USA',
+    'Northeastern U.S.A.': 'USA',
+    'South-Central U.S.A.': 'USA',
+    'North-Central U.S.A.': 'USA',
+    'Western Canada': 'CAN', 
+    'Eastern Canada': 'CAN'
+}
+
+def clean_country_name(country):
+    # For cleaning unmatched ISO3 codes
+    if len(country) > 3:
+        # First check if it is in the missed countries dict
+        try:
+            return missed_countries_dict[country]
+        except KeyError:
+            # Clean the country name
+            # Replace "Uk" as a word with "United Kingdom"
+            country = re.sub("\\bUk\\b", " United Kingdom", country)
+            # Split on ", " or " and " if "island" is not in country
+            if (", " in country) | (" and " in country) & ("island" not in country.lower()):
+                country_list = re.split(", | and ", country)
+                # Search for the ISO code for each country in the list
+                ISO3_list = [get_ISO3(country) for country in country_list]
+                return ISO3_list
+            else:
+                return country
+    else:
+        return country
+
+# Wrapper function to match countries
+
+def match_countries(df):
+    dicts = {}
+    ISO3_codes = []
+    unique_countries = df.loc[(df["ISO3"].isna()) & (df["location"].notna())].location.unique()
+    for country in unique_countries:
+        ISO3_codes.append(get_ISO3(country))
+    for i in range(len(unique_countries)):
+        dicts[unique_countries[i]] = ISO3_codes[i]
+    df.loc[df["ISO3"].isna(), "ISO3"] = df.loc[df["ISO3"].isna()].apply(
+        lambda x: dicts.get(x.location), axis=1
+    )
+    # Apply the clean country name function for common isuses
+    df.loc[df["ISO3"] == "Not found", "ISO3"] = df.loc[df["ISO3"] == "Not found"].apply(
+        lambda x: clean_country_name(x.location), axis=1
+    )
+    # Explode any rows that may contain lists
+    df = df.explode("ISO3")
+    print("The following location names remain unmatched:")
+    print(df.loc[df["ISO3"].str.len()>3].ISO3.unique())
+    return df

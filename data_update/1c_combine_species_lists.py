@@ -17,9 +17,10 @@ data_dir = os.getenv("DATA_PATH")
 
 # Bring in new species lists
 
-asfr_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/asfr_gbif.csv")
-cabi_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/cabi_gbif.csv")
-eppo_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/eppo_gbif.csv")
+asfr_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/asfr_gbif.csv", dtype={"usageKey":str})
+cabi_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/cabi_gbif.csv", dtype={"usageKey":str})
+eppo_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/eppo_gbif.csv", dtype={"usageKey":str})
+daisie_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/daisie_gbif.csv", dtype={"usageKey":str})
 
 # Specific row names
 
@@ -32,37 +33,18 @@ asfr_gbif["source"] = "ASFR"
 eppo_gbif.rename(columns={"species": "speciesEPPO"}, inplace=True)
 eppo_gbif["source"] = "EPPO"
 
-# To review later - the entries that had no match in GBIF
-
-cabi_nomatch = cabi_gbif.loc[cabi_gbif["usageKey"].isna()]
-asfr_nomatch = asfr_gbif.loc[asfr_gbif["usageKey"].isna()]
-eppo_nomatch = eppo_gbif.loc[eppo_gbif["usageKey"].isna()]
-
-all_nomatch = pd.concat(
-    [
-        asfr_nomatch[["speciesASFR", "source"]].rename(
-            columns={"speciesASFR": "species"}
-        ),
-        eppo_nomatch[["speciesEPPO", "source", "codeEPPO"]].rename(
-            columns={"speciesEPPO": "species"}
-        ),
-        cabi_nomatch[["speciesCABI", "source", "codeCABI"]].rename(
-            columns={"speciesCABI": "species"}
-        ),
-    ]
-).reset_index(drop=True)
-
-all_nomatch.to_csv(
-    data_dir + "species lists/gbif_matched/all_unmatched_gbif.csv", index=False
-)
+daisie_gbif.rename(columns={"species": "speciesDAISIE"}, inplace=True)
+daisie_gbif["source"] = "DAISIE"
 
 # Keep the matches
 
 cabi_match = cabi_gbif.loc[cabi_gbif["usageKey"].notna()]
 asfr_match = asfr_gbif.loc[asfr_gbif["usageKey"].notna()]
 eppo_match = eppo_gbif.loc[eppo_gbif["usageKey"].notna()]
+daisie_match = daisie_gbif.loc[daisie_gbif["usageKey"].notna()]
 
 # EPPO - read in already categorized data
+
 eppo_gbif_inv = pd.read_csv(
     data_dir + "species lists/gbif_matched/eppo_gbif_with_categ.csv"
 )
@@ -80,6 +62,7 @@ eppo_match = pd.merge(
 )
 
 # CABI already matched to invasive
+
 cabi_gbif_inv = pd.read_csv(
     data_dir + "species lists/gbif_matched/CABI_invasive_TF.csv"
 )
@@ -103,6 +86,7 @@ gbif_records = (
             cabi_match.loc[:, "usageKey":"rank"],
             asfr_match.loc[:, "usageKey":"rank"],
             eppo_match.loc[:, "usageKey":"rank"],
+            daisie_match.loc[:, "usageKey":"rank"],
         ],
         axis=0,
     )
@@ -128,6 +112,13 @@ combined_records = pd.merge(
     on="usageKey",
 )
 
+combined_records = pd.merge(
+    left=combined_records,
+    right=daisie_match.loc[:, ["speciesDAISIE", "codeDAISIE", "usageKey"]],
+    how="outer",
+    on="usageKey",
+)
+
 # Add back in one copy of the GBIF data
 
 combined_records = pd.merge(
@@ -141,10 +132,14 @@ invasive_all = (
         (combined_records["invasiveEPPO"] == True)
         | (combined_records["invasiveCABI"] == "True")
         | (combined_records["speciesASFR"].notna())
+        | (combined_records["speciesDAISIE"].notna())
     ]
     .reset_index()
     .drop(columns="index")
 )
+
+# Drop duplicated rows 
+invasive_all = invasive_all.drop_duplicates(keep="first")
 
 # Write to csv
 
@@ -156,21 +151,26 @@ print("Saved invasive all source file.")
 
 ASFR_link = invasive_all.loc[
     invasive_all["speciesASFR"].notna(), ["usageKey", "speciesASFR"]
-].reset_index(drop=True)
+].reset_index(drop=True).drop_duplicates()
 EPPO_link = invasive_all.loc[
     invasive_all["codeEPPO"].notna(), ["usageKey", "speciesEPPO", "codeEPPO"]
-].reset_index(drop=True)
+].reset_index(drop=True).drop_duplicates()
 CABI_link = invasive_all.loc[
     invasive_all["codeCABI"].notna(), ["usageKey", "speciesCABI", "codeCABI"]
-].reset_index(drop=True)
+].reset_index(drop=True).drop_duplicates()
+DAISIE_link = invasive_all.loc[
+    invasive_all["codeDAISIE"].notna(), ["usageKey", "speciesDAISIE", "codeDAISIE"]
+].reset_index(drop=True).drop_duplicates()
 
-GBIF_backbone = invasive_all[["usageKey"]].reset_index(drop=True)
+GBIF_backbone = invasive_all[["usageKey"]].drop_duplicates().reset_index(drop=True)
 
 # Write to CSV
 
 ASFR_link.to_csv(data_dir + "link files/ASFR_link.csv", index=False)
 EPPO_link.to_csv(data_dir + "link files/EPPO_link.csv", index=False)
 CABI_link.to_csv(data_dir + "link files/CABI_link.csv", index=False)
+DAISIE_link.to_csv(data_dir + "link files/DAISIE_link.csv", index=False)
+
 GBIF_backbone.to_csv(data_dir + "link files/GBIF_db_backbone.csv", index=False)
 
 print("Saved all link files.")
@@ -185,7 +185,7 @@ gbif_all.rename(columns={"taxonKey": "usageKey"}, inplace=True)
 
 # Set datatype to string
 
-gbif_all["usageKey"] = gbif_all["usageKey"].astype(str)
+gbif_all["usageKey"] = gbif_all["usageKey"].astype("int64").astype(str)
 
 # Filter gbif_all to usageKeys in invasive_link
 
