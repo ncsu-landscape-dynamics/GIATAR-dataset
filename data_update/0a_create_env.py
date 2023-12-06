@@ -20,8 +20,8 @@ base_obs_year = 1970
 
 # Store information about last updates
 
-gbif_obs_last_update = "2023-04-14"
-eppo_report_last_update = "2023-04-14"
+gbif_obs_last_update = "2023-11-01"
+eppo_report_last_update = "2023-11-01"
 
 with open(".env", "w") as f:
     f.write(f"DATA_PATH='{drive_letter + data_dir}'\n")
