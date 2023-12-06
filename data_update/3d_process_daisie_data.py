@@ -1,3 +1,10 @@
+"""
+File: data_update/3d_process_daisie_data.py
+Author: Thom Worm
+Date created: 2023-04-14
+Description: Pre-process the DAISIE datasets into a clean format
+"""
+
 import pandas as pd
 import numpy as np
 from pygbif import species
@@ -6,17 +13,15 @@ import dotenv
 from data_functions import *
 
 dotenv.load_dotenv(".env")
-#data_dir = os.getenv("DATA_PATH")
-data_dir = 'G:\GITAR\\'
+data_dir = os.getenv("DATA_PATH")
 
-#read occurences/all_records.csv from data_dir
-all_records = pd.read_csv(data_dir + "Database/occurrences/all_records.csv", low_memory=False)
-master_usageKey = all_records['usageKey'].unique()
+#read master list of usageKeys 
+master_usageKey = pd.read_csv(data_dir + "/link files/GBIF_db_backbone.csv", dtype={'usageKey': 'str'}).usageKey.unique()
 
-DAISIE_sources = pd.read_csv(data_dir + "Database/DAISIE data/raw/DAISIE_literature_references.csv", low_memory=False)
+DAISIE_sources = pd.read_csv(data_dir + "/DAISIE data/raw/DAISIE_literature_references.csv", low_memory=False)
 DAISIE_sources = DAISIE_sources[['sourceid', 'longref']].drop_duplicates()
 DAISIE_sources_dict = dict(zip(DAISIE_sources['sourceid'], DAISIE_sources['longref']))
-DAISIE_species = pd.read_csv(data_dir + "Database/DAISIE data/raw/DAISIE_taxon.csv", low_memory=False)
+DAISIE_species = pd.read_csv(data_dir + "/DAISIE data/raw/DAISIE_taxon.csv", low_memory=False)
 #create column genus_species for DAISIE
 DAISIE_species['genus_species'] = DAISIE_species['genus'] + ' ' + DAISIE_species['species']
 #create column source that is sourceid mapped to daiise_sources_dict
@@ -58,17 +63,17 @@ DAISIE_species_usageKey = DAISIE_species[['idspecies', 'usageKey']].drop_duplica
 DAISIE_species_usageKey_dict = dict(zip(DAISIE_species_usageKey['idspecies'], DAISIE_species_usageKey['usageKey']))
 ###############################################################################################
 #DAISIE_donor_areas
-donor_area = pd.read_csv(data_dir + "Database/DAISIE data/raw/DAISIE_donor_area.csv", low_memory=False)
+donor_area = pd.read_csv(data_dir + "/DAISIE data/raw/DAISIE_donor_area.csv", low_memory=False)
 donor_area['source'] = np.where(donor_area['sourceid'].isnull(), 'DAISIE', donor_area['sourceid'].map(DAISIE_sources_dict))
 donor_area['usageKey'] = donor_area['idspecies'].map(DAISIE_species_usageKey_dict)
 donor_area = donor_area.drop(columns=[ 'sourceid'])
 donor_area = donor_area.rename(columns={'idspecies': 'DAISIE_idspecies'})
 donor_area = donor_area.drop_duplicates()
 donor_area = donor_area.rename(columns={'region': 'donor_region'})
-donor_area.to_csv(data_dir + "Database/DAISIE data/DAISIE_donor_area.csv", index=False)
+donor_area.to_csv(data_dir + "/DAISIE data/DAISIE_donor_area.csv", index=False)
 
 #daisie habitat
-habitat = pd.read_csv(data_dir + "Database/DAISIE data/raw/DAISIE_habitat.csv", low_memory=False)
+habitat = pd.read_csv(data_dir + "/DAISIE data/raw/DAISIE_habitat.csv", low_memory=False)
 #if sourceid is null, set to 'DAISIE', otherwise map to sourceid:longref dictionary
 habitat['source'] = np.where(habitat['sourceid'].isnull(), 'DAISIE', habitat['sourceid'].map(DAISIE_sources_dict))
 #create column usageKey by mapping idspecies to usageKey in DAISIE_species_usageKey_dict
@@ -78,11 +83,11 @@ habitat = habitat.drop(columns=[ 'sourceid'])
 #rename idspecies to DAISIE_idspecies
 habitat = habitat.rename(columns={'idspecies': 'DAISIE_idspecies'})
 #write to csv in DAIISIE data/
-habitat.to_csv(data_dir + "Database/DAISIE data/DAISIE_habitat.csv", index=False)
+habitat.to_csv(data_dir + "/DAISIE data/DAISIE_habitat.csv", index=False)
 
 
 #daisie pathways
-pathways = pd.read_csv(data_dir + "Database/DAISIE data/raw/DAISIE_pathways.csv", low_memory=False)
+pathways = pd.read_csv(data_dir + "/DAISIE data/raw/DAISIE_pathways.csv", low_memory=False)
 #if sourceid is null, set to 'DAISIE', otherwise map to sourceid:longref dictionary
 pathways['source'] = np.where(pathways['sourceid'].isnull(), 'DAISIE', pathways['sourceid'].map(DAISIE_sources_dict))
 #create column usageKey by mapping idspecies to usageKey in DAISIE_species_usageKey_dict
@@ -95,11 +100,11 @@ pathways = pathways.rename(columns={'idspecies': 'DAISIE_idspecies'})
 pathways = pathways.drop(columns=[ 'id_sp_region'])
 
 #write to csv in DAIISIE data/
-pathways.to_csv(data_dir + "Database/DAISIE data/DAISIE_pathways.csv", index=False)
+pathways.to_csv(data_dir + "/DAISIE data/DAISIE_pathways.csv", index=False)
 
 
 #daisie vectors
-vectors = pd.read_csv(data_dir + "Database/DAISIE data/raw/DAISIE_vectors.csv", low_memory=False)
+vectors = pd.read_csv(data_dir + "/DAISIE data/raw/DAISIE_vectors.csv", low_memory=False)
 #if sourceid is null, set to 'DAISIE', otherwise map to sourceid:longref dictionary
 vectors['source'] = np.where(vectors['sourceid'].isnull(), 'DAISIE', vectors['sourceid'].map(DAISIE_sources_dict))
 #create column usageKey by mapping idspecies to usageKey in DAISIE_species_usageKey_dict
@@ -111,11 +116,11 @@ vectors = vectors.rename(columns={'idspecies': 'DAISIE_idspecies'})
 #drop id_sp_reg
 vectors = vectors.drop(columns=[ 'id_sp_region'])
 #write to csv in DAIISIE data/
-vectors.to_csv(data_dir + "Database/DAISIE data/DAISIE_vectors.csv", index=False)
+vectors.to_csv(data_dir + "/DAISIE data/DAISIE_vectors.csv", index=False)
 
 
 #vernacular names
-vernacular = pd.read_csv(data_dir + "Database/DAISIE data/raw/DAISIE_vernacular_names.csv", low_memory=False)
+vernacular = pd.read_csv(data_dir + "/DAISIE data/raw/DAISIE_vernacular_names.csv", low_memory=False)
 #if sourceid is null, set to 'DAISIE', otherwise map to sourceid:longref dictionary
 vernacular['source'] = np.where(vernacular['sourceid'].isnull(), 'DAISIE', vernacular['sourceid'].map(DAISIE_sources_dict))
 #create column usageKey by mapping idspecies to usageKey in DAISIE_species_usageKey_dict
@@ -125,10 +130,10 @@ vernacular = vernacular.drop(columns=[ 'sourceid'])
 #rename idspecies to DAISIE_idspecies
 vernacular = vernacular.rename(columns={'idspecies': 'DAISIE_idspecies'})
 #write to csv in DAIISIE data/
-vernacular.to_csv(data_dir + "Database/DAISIE data/DAISIE_vernacular_names.csv", index=False)
+vernacular.to_csv(data_dir + "/DAISIE data/DAISIE_vernacular_names.csv", index=False)
 
 #daisie distribution
-distribution = pd.read_csv(data_dir + "Database/DAISIE data/raw/DAISIE_distribution.csv", low_memory=False)
+distribution = pd.read_csv(data_dir + "/DAISIE data/raw/DAISIE_distribution.csv", low_memory=False)
 #if sourceid is null, set to 'DAISIE', otherwise map to sourceid:longref dictionary
 #distribution['source'] = np.where(distribution['sourceid'].isnull(), 'DAISIE', distribution['sourceid'].map(DAISIE_sources_dict))
 #create column usageKey by mapping idspecies to usageKey in DAISIE_species_usageKey_dict
@@ -147,4 +152,4 @@ distribution['source'] = np.where(distribution['id_sp_region'].isnull(), 'DAISIE
 
 distribution = distribution.rename(columns={'idspecies': 'DAISIE_idspecies'})
 #write to csv in DAIISIE data/
-distribution.to_csv(data_dir + "Database/DAISIE data/DAISIE_distribution.csv", index=False)
+distribution.to_csv(data_dir + "/DAISIE data/DAISIE_distribution.csv", index=False)
