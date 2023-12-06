@@ -1,3 +1,10 @@
+"""
+File: query_functions/GIATAR_query_functions.py
+Author: Thom Worm
+Date created: 2023-04-14
+Description: Functions to facilitate querying the GIATAR database
+"""
+
 import pandas as pd
 import numpy as np
 import math
@@ -29,14 +36,13 @@ import dotenv
 
 
 #### DATA PATH ####
-data_path = r"H:\Shared drives\Pandemic Data\Invasive database\Database\\"
 
-google_root = "H:"
 # if .env file exists, get data_path from .env file
 if os.path.exists(".env"):
     data_path = dotenv.get_key(".env", "data_path")
-
-os.chdir(data_path)
+    os.chdir(data_path)
+else:
+    print("No .env file found. Please use `create_dotenv()` to create a .env file")
 
 
 def create_dotenv(dp):
@@ -45,26 +51,19 @@ def create_dotenv(dp):
     with open(".env", "w") as f:
         f.write(f"data_path={dp}")
 
-
-# os.chdir("..")
 if "invasive_all_source" not in globals():
     global invasive_all_source
-    invasive_all_source = pd.read_csv(r"species lists\invasive_all_source.csv")
-    # set usageKey to string
-    invasive_all_source["usageKey"] = invasive_all_source["usageKey"].astype(str)
+    invasive_all_source = pd.read_csv(r"species lists\invasive_all_source.csv", dtype={'usageKey': 'str'})
 
 
 if "first_records" not in globals():
     global first_records
-    first_records = pd.read_csv(r"occurrences\first_records.csv", low_memory=False)
-    # set usageKey to string
-    first_records["usageKey"] = first_records["usageKey"].astype(str)
-
+    first_records = pd.read_csv(r"occurrences\first_records.csv", dtype={'usageKey': 'str'}, low_memory=False)
 
 def get_species_name(usageKey):
-    # if usagekey is not a string, convert to string
+    # if usagekey is not a string, convert to string and remove ".0"
     if not isinstance(usageKey, str):
-        usageKey = str(usageKey)
+        usageKey = str(usageKey).replace(".0", "")
 
     if usageKey in invasive_all_source["usageKey"].values:
         return invasive_all_source.loc[
@@ -211,7 +210,7 @@ def get_all_introductions(
     # create df of all first introductinos where usageKey = usageKey
     if "all_records" not in globals():
         global all_records
-    all_records = pd.read_csv(r"occurrences\all_records.csv", low_memory=False)
+    all_records = pd.read_csv(r"occurrences\all_records.csv", dtype={"usageKey":str}, low_memory=False)
 
     df = all_records.loc[all_records["usageKey"] == usageKey]
     # for each unique "ISO3" in df, get the first row were year is min
@@ -236,7 +235,6 @@ def get_all_introductions(
 
 
 def get_ecology(species_name, check_exists=False):
-    # os.chdir(f"{google_root}\Shared drives\Pandemic Data\Invasive database\Database")
     if check_exists == True:
         if not check_species_exists(species_name):
             raise KeyError(
@@ -248,26 +246,15 @@ def get_ecology(species_name, check_exists=False):
 
     # load csv for each of these files'CABI_rainfall', 'CABI_airtemp', 'CABI_climate', 'CABI_environments', 'CABI_lat_alt', 'CABI_water_tolerances'
 
-    CABI_rainfall = pd.read_csv(r"CABI data\CABI_tables\torainfall.csv")
-    CABI_airtemp = pd.read_csv(r"CABI data\CABI_tables\toairTemperature.csv")
-    CABI_climate = pd.read_csv(r"CABI data\CABI_tables\toclimate.csv")
-    CABI_environments = pd.read_csv(r"CABI data\CABI_tables\toenvironments.csv")
-    CABI_lat_alt = pd.read_csv(r"CABI data\CABI_tables\tolatitudeAndAltitudeRanges.csv")
-    CABI_natural_enemies = pd.read_csv(r"CABI data\CABI_tables\tonaturalEnemies.csv")
-    CABI_water_tolerances = pd.read_csv(r"CABI data\CABI_tables\towaterTolerances.csv")
-    CABI_wood_packaging = pd.read_csv(r"CABI data\CABI_tables\towoodPackaging.csv")
-    DAISIE_habitats = pd.read_csv(r"DAISIE data\DAISIE_habitat.csv")
-
-    # for all tables, make sure usagekey is a string
-    CABI_rainfall["usageKey"] = CABI_rainfall["usageKey"].astype(str)
-    CABI_airtemp["usageKey"] = CABI_airtemp["usageKey"].astype(str)
-    CABI_climate["usageKey"] = CABI_climate["usageKey"].astype(str)
-    CABI_environments["usageKey"] = CABI_environments["usageKey"].astype(str)
-    CABI_lat_alt["usageKey"] = CABI_lat_alt["usageKey"].astype(str)
-    CABI_natural_enemies["usageKey"] = CABI_natural_enemies["usageKey"].astype(str)
-    CABI_water_tolerances["usageKey"] = CABI_water_tolerances["usageKey"].astype(str)
-    CABI_wood_packaging["usageKey"] = CABI_wood_packaging["usageKey"].astype(str)
-    DAISIE_habitats["usageKey"] = DAISIE_habitats["usageKey"].astype(str)
+    CABI_rainfall = pd.read_csv(r"CABI data\CABI_tables\torainfall.csv", dtype={'usageKey': 'str'})
+    CABI_airtemp = pd.read_csv(r"CABI data\CABI_tables\toairTemperature.csv", dtype={'usageKey': 'str'})
+    CABI_climate = pd.read_csv(r"CABI data\CABI_tables\toclimate.csv", dtype={'usageKey': 'str'})
+    CABI_environments = pd.read_csv(r"CABI data\CABI_tables\toenvironments.csv", dtype={'usageKey': 'str'})
+    CABI_lat_alt = pd.read_csv(r"CABI data\CABI_tables\tolatitudeAndAltitudeRanges.csv", dtype={'usageKey': 'str'})
+    CABI_natural_enemies = pd.read_csv(r"CABI data\CABI_tables\tonaturalEnemies.csv", dtype={'usageKey': 'str'})
+    CABI_water_tolerances = pd.read_csv(r"CABI data\CABI_tables\towaterTolerances.csv", dtype={'usageKey': 'str'})
+    CABI_wood_packaging = pd.read_csv(r"CABI data\CABI_tables\towoodPackaging.csv", dtype={'usageKey': 'str'})
+    DAISIE_habitats = pd.read_csv(r"DAISIE data\DAISIE_habitat.csv", dtype={'usageKey': 'str'})
 
     # return a list of all rows where usageKey = usageKey
     # place rows into a dataframe and put into results_dict with key = filename
@@ -306,22 +293,14 @@ def get_hosts_and_vectors(species_name, check_exists=False):
 
     usageKey = get_usageKey(species_name)
 
-    CABI_tohostPlants = pd.read_csv(r"CABI data\CABI_tables\tohostPlants.csv")
-    CABI_topathwayVectors = pd.read_csv(r"CABI data\CABI_tables\topathwayVectors.csv")
+    CABI_tohostPlants = pd.read_csv(r"CABI data\CABI_tables\tohostPlants.csv", dtype={'usageKey': 'str'})
+    CABI_topathwayVectors = pd.read_csv(r"CABI data\CABI_tables\topathwayVectors.csv", dtype={'usageKey': 'str'})
     CABI_tovectorsAndIntermediateHosts = pd.read_csv(
-        r"CABI data\CABI_tables\tovectorsAndIntermediateHosts.csv"
+        r"CABI data\CABI_tables\tovectorsAndIntermediateHosts.csv", dtype={'usageKey': 'str'}
     )
-    EPPO_hosts = pd.read_csv(r"EPPO data\EPPO_hosts.csv")
-    DAISIE_pathways = pd.read_csv(r"DAISIE data\DAISIE_pathways.csv")
-    DAISIE_vectors = pd.read_csv(r"DAISIE data\DAISIE_vectors.csv")
-    # convert usageKey to string for every dataframe
-    CABI_tohostPlants["usageKey"] = CABI_tohostPlants["usageKey"].astype(str)
-    CABI_topathwayVectors["usageKey"] = CABI_topathwayVectors["usageKey"].astype(str)
-    CABI_tovectorsAndIntermediateHosts["usageKey"] = CABI_tovectorsAndIntermediateHosts[
-        "usageKey"
-    ].astype(str)
-    # truncate decimals from string column EPPO_hosts usageKey
-    EPPO_hosts["usageKey"] = EPPO_hosts["usageKey"].str.split(".").str[0]
+    EPPO_hosts = pd.read_csv(r"EPPO data\EPPO_hosts.csv", dtype={'usageKey': 'str'})
+    DAISIE_pathways = pd.read_csv(r"DAISIE data\DAISIE_pathways.csv", dtype={'usageKey': 'str'})
+    DAISIE_vectors = pd.read_csv(r"DAISIE data\DAISIE_vectors.csv", dtype={'usageKey': 'str'})
 
     ################################################################
     # CABI Queries
@@ -364,7 +343,6 @@ def get_hosts_and_vectors(species_name, check_exists=False):
 def get_species_list(
     kingdom=None, phylum=None, taxonomic_class=None, order=None, family=None, genus=None
 ):
-    os.chdir(f"{google_root}\Shared drives\Pandemic Data\Invasive database\Database")
     GBIF_backbone_invasive = pd.read_csv(r"GBIF data\GBIF_backbone_invasive.csv")
 
     # CREATE LIST OF USAGE KEYS MATCHING taxonomic CRITERIA
@@ -405,8 +383,6 @@ def get_species_list(
 def get_native_ranges(species_name, ISO3=None, check_exists=False):
     # as default, takes usageKey or species name as string and returns as list of native ISO3 codes
     # if ISO3 is not None, returns True or False if species is native to ISO3 - takes a list of ISO3 as input
-
-    # os.chdir(f"{google_root}\Shared drives\Pandemic Data\Invasive database\Database")
     if check_exists == True:
         if not check_species_exists(species_name):
             raise KeyError(
@@ -415,7 +391,7 @@ def get_native_ranges(species_name, ISO3=None, check_exists=False):
     if "native_ranges" not in globals():
         global native_ranges
         native_ranges = pd.read_csv(
-            r"native ranges\all_sources_native_ranges.csv", low_memory=False
+            r"native ranges\all_sources_native_ranges.csv", dtype={"usageKey": str}, low_memory=False
         )
     if "native_range_crosswalk" not in globals():
         global native_range_crosswalk
@@ -424,7 +400,7 @@ def get_native_ranges(species_name, ISO3=None, check_exists=False):
         )
     if "all_records" not in globals():
         global all_records
-        all_records = pd.read_csv(r"occurrences\all_records.csv", low_memory=False)
+        all_records = pd.read_csv(r"occurrences\all_records.csv", dtype={"usageKey": str}, low_memory=False)
     usageKey = get_usageKey(species_name)
 
     if ISO3 == None:
@@ -542,12 +518,10 @@ def get_common_names(species_name, check_exists=False):
     usageKey = get_usageKey(species_name)
 
     DAISIE_vernacular = pd.read_csv(
-        r"DAISIE data\DAISIE_vernacular_names.csv", low_memory=False
+        r"DAISIE data\DAISIE_vernacular_names.csv", dtype={"usageKey": str}, low_memory=False
     )
-    EPPO_names = pd.read_csv(r"EPPO data\EPPO_names.csv", low_memory=False)
+    EPPO_names = pd.read_csv(r"EPPO data\EPPO_names.csv", dtype={"usageKey": str}, low_memory=False)
     results_dict = {}
-    DAISIE_vernacular["usageKey"] = DAISIE_vernacular["usageKey"].astype(str)
-    EPPO_names["usageKey"] = EPPO_names["usageKey"].astype(str)
 
     # if usagekey in daisie, print "in daisie"
     print(DAISIE_vernacular.head())
