@@ -28,7 +28,6 @@ today = date.today()
 # Select and unselect a filter option to display full list
 # Download as CSV and save to species lists/by_database/ISCSearchResults.csv
 # Remove any headers and make sure columns are called "Scientific name", "Common name", "Coverage", "URL"
-# (We didn't code this in because they change it all the time...)
 
 cabi = pd.read_csv(data_dir + "species lists/by_database/ISCSearchResults.csv")
 

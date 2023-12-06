@@ -30,6 +30,8 @@ today = date.today()
 # GAINAME.TXT                animals
 # GAFNAME.TXT                micro-organisms, viruses, abiotic growth factors
 
+# Save all files to species lists/by_database/EPPO-main/
+
 eppo = pd.concat(
     [
         pd.read_csv(data_dir + "species lists/by_database/EPPO-main/pflname.txt"),
