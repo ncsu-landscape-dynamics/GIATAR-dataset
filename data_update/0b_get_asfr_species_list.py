@@ -19,7 +19,7 @@ data_dir = os.getenv("DATA_PATH")
 today = date.today()
 
 # Download the latest ASFR list from https://zenodo.org/record/3690742#.ZDbV4nbMIQ8 (if available)
-# If not, skip this script!
+# and save as species lists/by_database/AlienSpeciesFirstRecord.csv
 
 asfr_list = pd.read_csv(data_dir + "species lists/by_database/AlienSpeciesFirstRecord.csv")
 

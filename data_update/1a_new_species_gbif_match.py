@@ -9,7 +9,6 @@ import pandas as pd
 import os
 import sys
 import dotenv
-from glob import glob
 
 from datetime import date
 

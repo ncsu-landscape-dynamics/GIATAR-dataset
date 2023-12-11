@@ -1,5 +1,5 @@
 """
-File: data_update/0b_get_asfr_species_list.py
+File: data_update/0e_get_daisie_species_list.py
 Author: Ariel Saffer
 Date created: 2023-11-01
 Description: Reformat the DAISIE species list data downloaded from Github
@@ -20,7 +20,6 @@ today = date.today()
 
 # Download the latest version of input_taxon.csv and save to species lists/by_database/input_taxon.csv
 # from https://github.com/trias-project/daisie-checklist/tree/master/data/raw (if available)
-# If not, skip this script!
 
 daisie_list = pd.read_csv(data_dir + "species lists/by_database/input_taxon.csv")
 

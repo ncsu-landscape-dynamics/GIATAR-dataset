@@ -180,6 +180,11 @@ print(
     f'GBIF occurrence data included {len(clean_counts.index)} "first records" for {len(clean_counts.species.unique())} species.'
 )
 
+# Drop all rows and write new_keys back as a blank file
+
+new_keys = new_keys.drop(new_keys.index)
+new_keys.to_csv(data_dir + "species lists/new/new_usageKeys.csv", index=False)
+
 # Update the date in the .env file
 
 os.environ["GBIF_OBS_UPDATED"]=f"'{today.year}-{today.month:02d}-{today.day:02d}\n'"

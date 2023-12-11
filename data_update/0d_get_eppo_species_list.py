@@ -18,8 +18,6 @@ data_dir = os.getenv("DATA_PATH")
 # Get today's date
 today = date.today()
 
-# Get new lists: currently manual, could be coded (selenium, login required)
-
 ### Get current EPPO list
 
 ### Download Bayer flat file
@@ -29,6 +27,8 @@ today = date.today()
 # PFLNAME.TXT                plants
 # GAINAME.TXT                animals
 # GAFNAME.TXT                micro-organisms, viruses, abiotic growth factors
+
+# Save all files to species lists/by_database/EPPO-main/
 
 eppo = pd.concat(
     [

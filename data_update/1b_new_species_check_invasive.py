@@ -88,4 +88,3 @@ new_species.loc[new_species["usageKey"].notna()]["usageKey"].drop_duplicates().t
 print(
     f"Exported {len(new_species.loc[new_species['usageKey'].notna()])} new usageKeys, including"
     f" {len(new_species.loc[new_species['invasive']==True])} invasive species.")
-

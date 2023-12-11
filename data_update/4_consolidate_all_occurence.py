@@ -14,7 +14,7 @@ import re
 
 sys.path.append(os.getcwd())
 
-from data_update.data_functions import get_ISO3, clean_DAISIE_year, match_countries
+from data_update.data_functions import clean_DAISIE_year, match_countries
 
 # Get data dir - invasive database folder
 dotenv.load_dotenv(".env")
