@@ -18,8 +18,6 @@ data_dir = os.getenv("DATA_PATH")
 # Get today's date
 today = date.today()
 
-# Get new lists: currently manual, could be coded (selenium, login required)
-
 ### Get current EPPO list
 
 ### Download Bayer flat file

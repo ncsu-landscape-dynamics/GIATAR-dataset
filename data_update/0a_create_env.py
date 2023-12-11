@@ -7,8 +7,10 @@ Description: Create the .env file with workspace-relevant information
 
 # To create the database for the first time, you will also need to download the 
 # GBIF taxonomic backbone. 
+
 # Go to https://www.gbif.org/occurrence/download and select the Download tab. 
 # Select “Species List” (the last option). 
+
 # You should get an email notification when your download is available. 
 # Save file as species lists/by_database/gbif_all_small.csv
 

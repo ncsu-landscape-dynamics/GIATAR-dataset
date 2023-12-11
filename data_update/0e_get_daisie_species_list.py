@@ -20,7 +20,6 @@ today = date.today()
 
 # Download the latest version of input_taxon.csv and save to species lists/by_database/input_taxon.csv
 # from https://github.com/trias-project/daisie-checklist/tree/master/data/raw (if available)
-# If not, skip this script!
 
 daisie_list = pd.read_csv(data_dir + "species lists/by_database/input_taxon.csv")
 
