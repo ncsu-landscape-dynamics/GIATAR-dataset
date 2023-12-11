@@ -19,6 +19,8 @@ This repository contains the following code:
 
 ### Using the database - query functions
 
+Because GIATAR contains many different fields from different sources, we have provided some query functions to simplify using the database for the most common kinds of requests including querying records, biological traits, native ranges and common names. All scripts and functions are in Python.  A complete tutorial on the setup and usage of the query functions is availible in the query_functions folder. 
+
 ### Data update
 
 All the scripts to obtain (via API, direct download, or webscraping) and consolidate data from the sources used are provided in the data_update folder. These scripts should be run sequentially (`0a_create_env.py`, `0b_get_asfr_species_list.py`, ..., `5_eppo_api_update.py`) to create the database or update the database with new data from each source. All scripts can be run sequentially in with guiding instructions via `GIATAR_data_update.ipynb`. We recommend running each script individually to ensure that it produces the expected results, as there may be errors due to changes in original source formatting that occur over time. Please contact us if you run into issues!
