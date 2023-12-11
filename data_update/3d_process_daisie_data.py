@@ -146,11 +146,12 @@ distribution = pd.read_csv(data_dir + "/DAISIE data/raw/input_distribution.csv",
 #rename idspecies to DAISIE_idspecies
 #create column source that is id_sp_region mapped to daiise_region_sources_dict
 #reset index to get rid of duplicate index
-DAISIE_region_sources_dict['nan'] = 'DAISIE'
+#DAISIE_region_sources_dict['nan'] = 'DAISIE'
 distribution = distribution.drop_duplicates()
 
 #if id_sp_region is null, set to 'DAISIE', otherwise map to id_sp_region:longref dictionary
-distribution['source'] = np.where(distribution['id_sp_region'].isnull(), 'DAISIE', distribution['id_sp_region'].map(DAISIE_region_sources_dict))
+distribution['source'] = np.where(distribution['id_sp_region'].isnull(), 'DAISIE', 
+#distribution['id_sp_region'].map(DAISIE_region_sources_dict))
 
 
 distribution = distribution.rename(columns={'idspecies': 'DAISIE_idspecies'})
