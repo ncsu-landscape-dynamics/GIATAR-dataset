@@ -586,3 +586,55 @@ def get_common_names(species_name, check_exists=False):
     results_dict["EPPO_names"] = EPPO_names.loc[EPPO_names["usageKey"] == usageKey]
     results_dict = {k: v for k, v in results_dict.items() if not v.empty}
     return results_dict
+def get_trait_table_list():
+    return [
+        "CABI_rainfall",
+        "CABI_airtemp",
+        "CABI_climate",
+        "CABI_environments",
+        "CABI_lat_alt",
+        "CABI_natural_enemies",
+        "CABI_water_tolerances",
+        "CABI_wood_packaging",
+        "CABI_host_plants",
+        "CABI_pathway_vectors",
+        "CABI_vectorsAndIntermediateHosts",
+        "DAISIE_habitats",
+        "CABI_impact_summary",
+        "CABI_latitude_altitude_ranges",
+        "CABI_symptoms_signs",
+        "CABI_threatened_species",
+        "EPPO_hosts",
+        "EPPO_names",
+        "DAISIE_pathways",
+        "DAISIE_vectors",
+        "DAISIE_vernacular"
+    ]
+
+# Function to select a specific trait table
+def get_trait_table(table_name, usageKey=None):
+    if table_name not in get_trait_table_list():
+        raise ValueError(f"Table name '{table_name}' not found.")
+    
+    # Check if the table has already been loaded
+    if table_name in globals():
+        table = globals()[table_name]
+    else:
+        file_path = None
+        if table_name == "CABI_rainfall":
+            file_path = "CABI data/CABI_tables/torainfall.csv"
+        elif table_name == "CABI_airtemp":
+            file_path = "CABI data/CABI_tables/toairtemp.csv"
+        # Add similar conditions for other tables
+        
+        if file_path is not None:
+            table = pd.read_csv(file_path, dtype={"usageKey": str})
+            globals()[table_name] = table
+        else:
+            raise ValueError(f"File path for table '{table_name}' is not specified.")
+    
+    # Filter rows based on usageKey if provided
+    if usageKey is not None:
+        table = table[table["usageKey"] == usageKey]
+    
+    return table
