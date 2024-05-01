@@ -6,8 +6,38 @@
 
 library(dplyr)
 library(readr)
-
+library(dotenv)
 # get_species_name(usageKey) - returns species name as string - takes usageKey as string or int
+
+
+
+
+
+if (!length(Sys.getenv("GIATAR_path")) | Sys.getenv("GIATAR_path") == "" ) {
+  # Prompt the user to enter GIATAR_path
+  cat("GIATAR_path environment variable not found.\n")
+  GIATAR_path <- readline(prompt = "Enter GIATAR_path: ")
+  
+  # Set the entered value as an environment variable
+  Sys.setenv(GIATAR_path = GIATAR_path)
+} else {
+  # Retrieve the value of GIATAR_path environment variable
+  GIATAR_path <- Sys.getenv("GIATAR_path")
+}
+
+setwd(GIATAR_path)
+
+# Check if invasive_all_source is not defined
+if (!exists("invasive_all_source")) {
+  # Read invasive_all_source.csv into a dataframe
+  invasive_all_source <- read.csv("species lists/invasive_all_source.csv", header = TRUE, stringsAsFactors = FALSE)
+}
+
+# Check if first_records is not defined
+if (!exists("first_records")) {
+  # Read first_records.csv into a dataframe
+  first_records <- read.csv("occurrences/first_records.csv", header = TRUE, stringsAsFactors = FALSE)
+}
 
 get_species_name <- function(usageKey) {
   
@@ -284,66 +314,167 @@ get_species_list <- function(kingdom=NULL, phylum=NULL, taxonomic_class=NULL, or
   
 }
 
+# get_native_ranges <- function(species_name, ISO3=NULL, check_exists=FALSE) {
+#   
+#   if(check_exists) {
+#     if(!check_species_exists(species_name)) {
+#       stop("Species not in Database. Try checking master list with get_all_species()")
+#     }
+#   }
+#   
+#   usageKey <- get_usageKey(species_name)
+#   
+#   if(is.null(ISO3)) {
+#     
+#     # Read the all_records.csv file here
+#     # e.g., all_records <- read_csv("path/to/all_records.csv", col_types = cols(usageKey = col_character()))
+#     
+#     records <- all_records[all_records$usageKey == usageKey, ]
+#     records <- records[!is.na(records$Native), ]
+#     records <- records[records$Source != "Original", ]
+#     
+#     records <- records[, c("ISO3", "Source", "Native", "Reference")]
+#     records$bioregion <- NA
+#     records$DAISIE_region <- NA
+#     
+#     # Read the native_ranges file here
+#     # e.g., native_ranges <- read_csv("path/to/native_ranges.csv", col_types = cols(usageKey = col_character()))
+#     
+#     native_ranges_temp <- native_ranges[native_ranges$usageKey == usageKey, c("Source", "bioregion", "DAISIE_region", "Reference")]
+#     native_ranges_temp$Native <- TRUE
+#     native_ranges_temp$ISO3 <- NA
+#     
+#     records <- rbind(records, native_ranges_temp)
+#     
+#     return(records)
+#     
+#   } else {
+#     
+#     tryCatch({
+#       
+#       if(!is.list(ISO3)) {
+#         stop("ISO3 must be a list of 3 character strings")
+#       }
+#       
+#       native_ranges$usageKey <- as.character(native_ranges$usageKey)
+#       
+#       records <- all_records[all_records$usageKey == usageKey, ]
+#       records <- records[!is.na(records$Native), ]
+#       records <- records[records$Source != "Original", ]
+#       
+#       records <- records[, c("ISO3", "Source", "Native", "Reference")]
+#       records$bioregion <- NA
+#       records$DAISIE_region <- NA
+#       
+#       t_f_df <- data.frame(ISO3 = character(), Native = logical(), src = character())
+#       
+#       bioregions <- unique(native_ranges$bioregion[native_ranges$usageKey == usageKey])
+#       
+#       for(iso3 in ISO3) {
+#         native <- NA
+#         src <- NA
+#         
+#         if(length(bioregions) > 0) {
+#           bioregions_temp <- native_range_crosswalk$modified_Bioregion[native_range_crosswalk$ISO3 == iso3]
+#           for(br in bioregions_temp) {
+#             if(br %in% bioregions) {
+#               native <- TRUE
+#               src <- "br"
+#               break
+#             } else {
+#               native <- FALSE 
+#               src <- "br"
+#             }
+#           }
+#         }
+#         
+#         if(iso3 %in% records$ISO3) {
+#           native <- records$Native[records$ISO3 == iso3]
+#           src <- "records"
+#         }
+#         
+#         if(length(bioregions) == 0 & !iso3 %in% records$ISO3) {
+#           native <- NA
+#           src <- "records only - no bioregion found" 
+#         }
+#         
+#         t_f_df <- rbind(t_f_df, data.frame(ISO3 = iso3, Native = native, src = src))
+#         
+#       }
+#       
+#       return(t_f_df)
+#       
+#     }, error = function(e) {
+#       print("ISO3 missing from bioregion crosswalk")
+#       print(paste0("please add ", iso3, " to bioregion crosswalk"))
+#       return(NULL) 
+#     })
+#     
+#   }
+#   
+# }
+
+
 get_native_ranges <- function(species_name, ISO3=NULL, check_exists=FALSE) {
-  
+
   if(check_exists) {
     if(!check_species_exists(species_name)) {
       stop("Species not in Database. Try checking master list with get_all_species()")
     }
   }
-  
+
   usageKey <- get_usageKey(species_name)
-  
+  print(ISO3)
   if(is.null(ISO3)) {
-    
+
     # Read the all_records.csv file here
     # e.g., all_records <- read_csv("path/to/all_records.csv", col_types = cols(usageKey = col_character()))
-    
+
     records <- all_records[all_records$usageKey == usageKey, ]
     records <- records[!is.na(records$Native), ]
     records <- records[records$Source != "Original", ]
-    
+
     records <- records[, c("ISO3", "Source", "Native", "Reference")]
     records$bioregion <- NA
     records$DAISIE_region <- NA
-    
+
     # Read the native_ranges file here
     # e.g., native_ranges <- read_csv("path/to/native_ranges.csv", col_types = cols(usageKey = col_character()))
-    
+
     native_ranges_temp <- native_ranges[native_ranges$usageKey == usageKey, c("Source", "bioregion", "DAISIE_region", "Reference")]
     native_ranges_temp$Native <- TRUE
     native_ranges_temp$ISO3 <- NA
-    
+
     records <- rbind(records, native_ranges_temp)
-    
+
     return(records)
-    
+
   } else {
-    
+
     tryCatch({
-      
+
       if(!is.list(ISO3)) {
         stop("ISO3 must be a list of 3 character strings")
       }
-      
+
       native_ranges$usageKey <- as.character(native_ranges$usageKey)
-      
+
       records <- all_records[all_records$usageKey == usageKey, ]
       records <- records[!is.na(records$Native), ]
       records <- records[records$Source != "Original", ]
-      
+
       records <- records[, c("ISO3", "Source", "Native", "Reference")]
       records$bioregion <- NA
       records$DAISIE_region <- NA
-      
+
       t_f_df <- data.frame(ISO3 = character(), Native = logical(), src = character())
-      
+
       bioregions <- unique(native_ranges$bioregion[native_ranges$usageKey == usageKey])
-      
+      print('here')
       for(iso3 in ISO3) {
         native <- NA
         src <- NA
-        
+
         if(length(bioregions) > 0) {
           bioregions_temp <- native_range_crosswalk$modified_Bioregion[native_range_crosswalk$ISO3 == iso3]
           for(br in bioregions_temp) {
@@ -352,37 +483,43 @@ get_native_ranges <- function(species_name, ISO3=NULL, check_exists=FALSE) {
               src <- "br"
               break
             } else {
-              native <- FALSE 
+              native <- FALSE
               src <- "br"
             }
           }
         }
-        
+
         if(iso3 %in% records$ISO3) {
           native <- records$Native[records$ISO3 == iso3]
           src <- "records"
         }
-        
+
         if(length(bioregions) == 0 & !iso3 %in% records$ISO3) {
           native <- NA
-          src <- "records only - no bioregion found" 
+          src <- "records only - no bioregion found"
         }
-        
+
+        # Store iso3 before entering tryCatch block
+        iso3_for_error <- iso3
+
         t_f_df <- rbind(t_f_df, data.frame(ISO3 = iso3, Native = native, src = src))
-        
+
       }
-      
+
       return(t_f_df)
-      
+
     }, error = function(e) {
+      # Use iso3_for_error in the error handling function
       print("ISO3 missing from bioregion crosswalk")
-      print(paste0("please add ", iso3, " to bioregion crosswalk"))
-      return(NULL) 
+      print(paste0("please add ", iso3_for_error, " to bioregion crosswalk"))
+      return(NULL)
     })
-    
+
   }
-  
+
 }
+
+get_native_ranges('Apis mellifera')
 
 get_common_names <- function(species_name, check_exists=FALSE) {
   
