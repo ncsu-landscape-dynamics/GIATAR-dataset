@@ -34,6 +34,7 @@ CABI_wood_packaging <- read_csv("CABI data/CABI_tables/towoodPackaging.csv", col
 DAISIE_habitats <- read_csv("DAISIE data/DAISIE_habitat.csv", col_types = cols(usageKey = col_character()))
 CABI_tohostPlants <- read_csv("CABI data/CABI_tables/tohostPlants.csv", col_types = cols(usageKey = col_character()))
 CABI_topathwayVectors <- read_csv("CABI data/CABI_tables/topathwayVectors.csv", col_types = cols(usageKey = col_character()))
+CABI_topathwayCauses <- read_csv("CABI data/CABI_tables/topathwayCauses.csv", col_types = cols(usageKey = col_character()))
 CABI_tovectorsAndIntermediateHosts <- read_csv("CABI data/CABI_tables/tovectorsAndIntermediateHosts.csv", col_types = cols(usageKey = col_character()))
 EPPO_hosts <- read_csv("EPPO data/EPPO_hosts.csv", col_types = cols(usageKey = col_character()))
 DAISIE_pathways <- read_csv("DAISIE data/DAISIE_pathways.csv", col_types = cols(usageKey = col_character()))
@@ -229,6 +230,7 @@ get_hosts_and_vectors <- function(species_name, check_exists = FALSE) {
   results_dict <- list()
   results_dict$CABI_tohostPlants <- CABI_tohostPlants[CABI_tohostPlants$usageKey == usageKey, ]
   results_dict$CABI_topathwayVectors <- CABI_topathwayVectors[CABI_topathwayVectors$usageKey == usageKey, ]
+  results_dict$CABI_topathwayCauses <- CABI_topathwayCauses[CABI_topathwayCauses$usageKey == usageKey, ]
   results_dict$CABI_tovectorsAndIntermediateHosts <- CABI_tovectorsAndIntermediateHosts[CABI_tovectorsAndIntermediateHosts$usageKey == usageKey, ]
   results_dict$EPPO_hosts <- EPPO_hosts[EPPO_hosts$usageKey == usageKey, ]
   print(DAISIE_pathways[DAISIE_pathways$usageKey == usageKey, ])
@@ -428,6 +430,7 @@ get_trait_table <- function(table_name, usageKey = NULL) {
       CABI_wood_packaging = "CABI data/CABI_tables/towoodPackaging.csv",
       CABI_host_plants = "CABI data/CABI_tables/tohostPlants.csv",
       CABI_pathway_vectors = "CABI data/CABI_tables/topathwayVectors.csv",
+      CABI_pathway_causes = "CABI data/CABI_tables/topathwayCauses.csv",
       CABI_vectorsAndIntermediateHosts = "CABI data/CABI_tables/tovectorsAndIntermediateHosts.csv",
       DAISIE_habitats = "DAISIE data/DAISIE_habitat.csv",
       CABI_impact_summary = "CABI data/CABI_tables/toimpactSummary.csv",
