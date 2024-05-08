@@ -35,6 +35,7 @@ DAISIE_habitats <- read_csv("DAISIE data/DAISIE_habitat.csv", col_types = cols(u
 CABI_tohostPlants <- read_csv("CABI data/CABI_tables/tohostPlants.csv", col_types = cols(usageKey = col_character()))
 CABI_topathwayVectors <- read_csv("CABI data/CABI_tables/topathwayVectors.csv", col_types = cols(usageKey = col_character()))
 CABI_topathwayCauses <- read_csv("CABI data/CABI_tables/topathwayCauses.csv", col_types = cols(usageKey = col_character()))
+CABI_toplantTrade <- read_csv("CABI data/CABI_tables/toplantTrade.csv", col_types = cols(usageKey = col_character()))
 CABI_tovectorsAndIntermediateHosts <- read_csv("CABI data/CABI_tables/tovectorsAndIntermediateHosts.csv", col_types = cols(usageKey = col_character()))
 EPPO_hosts <- read_csv("EPPO data/EPPO_hosts.csv", col_types = cols(usageKey = col_character()))
 DAISIE_pathways <- read_csv("DAISIE data/DAISIE_pathways.csv", col_types = cols(usageKey = col_character()))
@@ -42,6 +43,7 @@ DAISIE_vectors <- read_csv("DAISIE data/DAISIE_vectors.csv", col_types = cols(us
 GBIF_backbone_invasive <- read_csv("GBIF data/GBIF_backbone_invasive.csv")
 DAISIE_vernacular <- read_csv("DAISIE data/DAISIE_vernacular_names.csv", col_types = cols(usageKey = col_character()), lazy = FALSE)
 EPPO_names <- read_csv("EPPO data/EPPO_names.csv", col_types = cols(usageKey = col_character()), lazy = FALSE)
+
 get_species_name <- function(usageKey) {
   if (!is.character(usageKey)) {
     usageKey <- gsub(".0", "", as.character(usageKey))
@@ -236,7 +238,7 @@ get_hosts_and_vectors <- function(species_name, check_exists = FALSE) {
   print(DAISIE_pathways[DAISIE_pathways$usageKey == usageKey, ])
   results_dict$DAISIE_pathways <- DAISIE_pathways[DAISIE_pathways$usageKey == usageKey, ]
   results_dict$DAISIE_vectors <- DAISIE_vectors[DAISIE_vectors$usageKey == usageKey, ]
-  
+  results_dict$CABI_toplantTrade <- CABI_toplantTrade[CABI_toplantTrade$usageKey == usageKey, ]
   # Remove rows with all NA from each table
   results_dict <- lapply(results_dict, function(x) {
     if (is.null(x) || nrow(x) == 0) return(NULL) else return(x)
@@ -400,6 +402,7 @@ get_trait_table_list <- function() {
     "CABI_wood_packaging",
     "CABI_host_plants",
     "CABI_pathway_vectors",
+    "CABI_Plant_trade",
     "CABI_vectorsAndIntermediateHosts",
     "DAISIE_habitats",
     "CABI_impact_summary",

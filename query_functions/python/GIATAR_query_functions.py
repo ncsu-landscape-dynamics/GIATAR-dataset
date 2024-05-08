@@ -284,7 +284,9 @@ def get_ecology(species_name, check_exists=False):
     DAISIE_habitats = pd.read_csv(
         r"DAISIE data\DAISIE_habitat.csv", dtype={"usageKey": "str"}
     )
-
+    CABI_plant_trade = pd.read_csv(
+        r"CAIB data\CABI_tables\toPlantTrade.csv", dtype={"usageKey": "str"}
+    )
     # return a list of all rows where usageKey = usageKey
     # place rows into a dataframe and put into results_dict with key = filename
     result_dict["CABI_rainfall"] = CABI_rainfall.loc[
@@ -305,7 +307,12 @@ def get_ecology(species_name, check_exists=False):
     result_dict["DAISIE_habitats"] = DAISIE_habitats.loc[
         DAISIE_habitats["usageKey"] == usageKey
     ]
-
+    result_dict["CABI_natural_enemies"] = CABI_natural_enemies.loc[
+        CABI_natural_enemies["usageKey"] == usageKey
+    ]
+    result_dict["CABI_plant_trade"] = CABI_plant_trade.loc[
+        CABI_plant_trade["usageKey"] == usageKey
+    ]
     # remove empty keys in result_dict
     result_dict = {k: v for k, v in result_dict.items() if not v.empty}
 
@@ -362,6 +369,7 @@ def get_hosts_and_vectors(species_name, check_exists=False):
     results_dict["CABI_topathwayVectors"] = CABI_topathwayVectors.loc[
         CABI_topathwayVectors["usageKey"] == usageKey
     ]
+
     results_dict["CABI_tovectorsAndIntermediateHosts"] = (
         CABI_tovectorsAndIntermediateHosts.loc[
             CABI_tovectorsAndIntermediateHosts["usageKey"] == usageKey
