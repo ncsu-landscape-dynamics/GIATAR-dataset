@@ -90,7 +90,11 @@ results = []
 for (
     i, call
 ) in enumerate(api_calls_df.api_call):
-    result = call_gbif_api(call)
+    try:
+        result = call_gbif_api(call)
+    except:
+        print(f"Failed on API call {i}!")
+        result = "Failed" # Placeholder for failed API calls 
     results.append(result)
     if i % 100 == 0:
         print(f"{i} out of {len(api_calls_df.api_call)} API calls done!")

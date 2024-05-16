@@ -560,8 +560,13 @@ def call_gbif_api(call):
             response = requests.get(call, verify=False).json()
         except requests.exceptions.RequestException:
             print("Trying a minute...")
-            sleep(20)
-            response = requests.get(call).json()
+            sleep(60)
+            try:
+                response = requests.get(call).json()
+            except requests.exceptions.RequestException:
+                print("Something seems to be wrong with the server... let's take a break.")
+                sleep(3600)
+                response = requests.get(call).json()
     response_vals = response["facets"][0]["counts"]
     country = []
     counts = []
