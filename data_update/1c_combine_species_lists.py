@@ -2,7 +2,7 @@
 File: data_update/1c_combine_species_lists.py
 Author: Ariel Saffer
 Date created: 2023-04-14
-Description: Combine the species lists from ASFR, CABI, and EPPO using the GBIF usageKey
+Description: Combine the species lists from SInAS, CABI, and EPPO using the GBIF usageKey
 """
 
 import pandas as pd
@@ -17,7 +17,7 @@ data_dir = os.getenv("DATA_PATH")
 
 # Bring in new species lists
 
-asfr_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/asfr_gbif.csv", dtype={"usageKey":str})
+sinas_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/sinas_gbif.csv", dtype={"usageKey":str})
 cabi_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/cabi_gbif.csv", dtype={"usageKey":str})
 eppo_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/eppo_gbif.csv", dtype={"usageKey":str})
 daisie_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/daisie_gbif.csv", dtype={"usageKey":str})
@@ -27,8 +27,8 @@ daisie_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/daisie_gbif.csv
 cabi_gbif.rename(columns={"species": "speciesCABI"}, inplace=True)
 cabi_gbif["source"] = "CABI"
 
-asfr_gbif.rename(columns={"species": "speciesASFR"}, inplace=True)
-asfr_gbif["source"] = "ASFR"
+sinas_gbif.rename(columns={"species": "speciesSINAS"}, inplace=True)
+sinas_gbif["source"] = "SInAS"
 
 eppo_gbif.rename(columns={"species": "speciesEPPO"}, inplace=True)
 eppo_gbif["source"] = "EPPO"
@@ -39,7 +39,7 @@ daisie_gbif["source"] = "DAISIE"
 # Keep the matches
 
 cabi_match = cabi_gbif.loc[cabi_gbif["usageKey"].notna()]
-asfr_match = asfr_gbif.loc[asfr_gbif["usageKey"].notna()]
+sinas_match = sinas_gbif.loc[sinas_gbif["usageKey"].notna()]
 eppo_match = eppo_gbif.loc[eppo_gbif["usageKey"].notna()]
 daisie_match = daisie_gbif.loc[daisie_gbif["usageKey"].notna()]
 
@@ -84,7 +84,7 @@ gbif_records = (
     pd.concat(
         [
             cabi_match.loc[:, "usageKey":"rank"],
-            asfr_match.loc[:, "usageKey":"rank"],
+            sinas_match.loc[:, "usageKey":"rank"],
             eppo_match.loc[:, "usageKey":"rank"],
             daisie_match.loc[:, "usageKey":"rank"],
         ],
@@ -96,11 +96,11 @@ gbif_records = (
 gbif_records = gbif_records.drop_duplicates("usageKey").sort_index()
 
 
-# Rebuild a combined dataframe: for each usageKey, map records from CABI, ASFR, and EPPO
+# Rebuild a combined dataframe: for each usageKey, map records from CABI, SInAS, and EPPO
 
 combined_records = pd.merge(
     left=cabi_match.loc[:, ["speciesCABI", "codeCABI", "usageKey", "invasiveCABI"]],
-    right=asfr_match.loc[:, "speciesASFR":"usageKey"],
+    right=sinas_match.loc[:, "speciesSINAS":"usageKey"],
     how="outer",
     on="usageKey",
 )
@@ -125,13 +125,13 @@ combined_records = pd.merge(
     left=combined_records, right=gbif_records, how="left", on="usageKey",
 )
 
-# Any species that appears in ASFR, has a categorization in EPPO, or is an Invasive species/Pest/Pest vector datasheet type in CABI
+# Any species that appears in SInAS, has a categorization in EPPO, or is an Invasive species/Pest/Pest vector datasheet type in CABI
 
 invasive_all = (
     combined_records.loc[
         (combined_records["invasiveEPPO"] == True)
         | (combined_records["invasiveCABI"] == "True")
-        | (combined_records["speciesASFR"].notna())
+        | (combined_records["speciesSINAS"].notna())
         | (combined_records["speciesDAISIE"].notna())
     ]
     .reset_index()
@@ -149,8 +149,8 @@ print("Saved invasive all source file.")
 
 # Make the link files
 
-ASFR_link = invasive_all.loc[
-    invasive_all["speciesASFR"].notna(), ["usageKey", "speciesASFR"]
+SINAS_link = invasive_all.loc[
+    invasive_all["speciesSINAS"].notna(), ["usageKey", "speciesSINAS"]
 ].reset_index(drop=True).drop_duplicates()
 EPPO_link = invasive_all.loc[
     invasive_all["codeEPPO"].notna(), ["usageKey", "speciesEPPO", "codeEPPO"]
@@ -166,7 +166,7 @@ GBIF_backbone = invasive_all[["usageKey"]].drop_duplicates().reset_index(drop=Tr
 
 # Write to CSV
 
-ASFR_link.to_csv(data_dir + "link files/ASFR_link.csv", index=False)
+SINAS_link.to_csv(data_dir + "link files/SINAS_link.csv", index=False)
 EPPO_link.to_csv(data_dir + "link files/EPPO_link.csv", index=False)
 CABI_link.to_csv(data_dir + "link files/CABI_link.csv", index=False)
 DAISIE_link.to_csv(data_dir + "link files/DAISIE_link.csv", index=False)

@@ -37,21 +37,23 @@ cabi_new = cabi_new.loc[cabi_new["New"]==True]
 eppo_new = pd.read_csv(data_dir + "species lists/gbif_matched/eppo_gbif.csv", dtype={"usageKey":str})
 eppo_new = eppo_new.loc[eppo_new["New"]==True]
 
-asfr_new = pd.read_csv(data_dir + "species lists/gbif_matched/asfr_gbif.csv", dtype={"usageKey":str})
-asfr_new = asfr_new.loc[asfr_new["New"]==True]
+sinas_new = pd.read_csv(data_dir + "species lists/gbif_matched/sinas_gbif.csv", dtype={"usageKey":str})
+sinas_new = sinas_new.loc[sinas_new["New"]==True]
 
 daisie_new = pd.read_csv(data_dir + "species lists/gbif_matched/daisie_gbif.csv", dtype={"usageKey":str})
 daisie_new = daisie_new.loc[daisie_new["New"]==True]
 
-# All ASFR assumed invasive
+# All SInAS assumed invasive
 
-asfr_new.to_csv(data_dir + "species lists/new/asfr_new.csv", index=False)
+sinas_new["invasive"] = True
+sinas_new.to_csv(data_dir + "species lists/new/sinas_new.csv", index=False)
 
 # All DAISIE assumed invasive
 
+daisie_new["invasive"] = True
 daisie_new.to_csv(data_dir + "species lists/new/daisie_new.csv", index=False)
 
-# EPPO - has categorization
+# EPPO - has categorizationd
 
 print(f"Getting EPPO categorization for {len(eppo_new)} species")
 eppo_new["categorization"] = eppo_new.codeEPPO.apply(lambda x: eppo_cat_api(x, token))
@@ -80,7 +82,7 @@ cabi_new.to_csv(data_dir + "species lists/new/cabi_new.csv", index=False)
 
 # Export a list (as .csv) of all new species usageKeys (to run the full EPPO and CABI queries on)
 
-new_species = pd.concat([cabi_new, eppo_new, asfr_new], ignore_index=True)
+new_species = pd.concat([cabi_new, eppo_new, sinas_new], ignore_index=True)
 new_species.loc[new_species["usageKey"].notna()]["usageKey"].drop_duplicates().to_csv(
     data_dir + "species lists/new/new_usageKeys.csv", index=False
 )
