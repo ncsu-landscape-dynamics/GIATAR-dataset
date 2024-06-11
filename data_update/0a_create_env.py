@@ -21,7 +21,7 @@ data_dir = "/GITAR/Database/"
 
 # Auth token for EPPO API
 
-eppo_token = "insert"  # Anyone can register on EPPO (https://data.eppo.int/user/login) to get a token
+eppo_token = "f5e761b9bf9338e53a1bae94e699abb3"  # Anyone can register on EPPO (https://data.eppo.int/user/login) to get a token
 
 # Year to start collecting GBIF records
 

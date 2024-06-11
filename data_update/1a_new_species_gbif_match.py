@@ -56,16 +56,15 @@ cabi_species["codeCABI"] = cabi_species.URL.str.extract("(\d+)")
 cabi_species["codeCABI"] = cabi_species["codeCABI"].astype("int")
 cabi_species.drop(columns="URL", inplace=True)
 
-cabi_species.rename(columns={"Scientific name": "species"}, inplace=True)
-eppo_species.rename(columns={"fullname": "species", "code": "codeEPPO"}, inplace=True)
-daisie_species.rename(columns={"scientificName": "species", "idspecies": "codeDAISIE"}, inplace=True)
+cabi_species.rename(columns={"Scientific name": "origTaxon"}, inplace=True)
+eppo_species.rename(columns={"fullname": "origTaxon", "code": "codeEPPO"}, inplace=True)
+daisie_species.rename(columns={"scientificName": "origTaxon", "idspecies": "codeDAISIE"}, inplace=True)
 
 
 # In the SInAS data, GBIF has already been matched
 # Clean the GBIF column names by removing the GBIF prefix
 sinas_species.rename(columns={colname: colname.replace("GBIF", "") for colname in sinas_species.columns}, inplace=True)
-sinas_species.drop(columns="species", inplace=True)
-sinas_species.rename(columns={"Taxon":"species"}, inplace=True)
+sinas_species.rename(columns={"Taxon":"origTaxon"}, inplace=True)
 
 # If we haven't matched them in GBIF previously, check for matches
 
@@ -74,7 +73,7 @@ sinas_species.rename(columns={"Taxon":"species"}, inplace=True)
 try:
     sinas_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/sinas_gbif.csv", dtype={"usageKey": "str"})
 except FileNotFoundError:
-    sinas_gbif = pd.DataFrame(columns=["species", "usageKey", "New", "Date"])
+    sinas_gbif = pd.DataFrame(columns=["origTaxon", "usageKey", "New", "Date"])
 
 try:
     cabi_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/cabi_gbif.csv", dtype={"usageKey": "str"})
@@ -106,7 +105,7 @@ daisie_match = daisie_gbif.loc[~((daisie_gbif.usageKey.isna()) | (daisie_gbif.us
 # This will capture both new values and values that were not previously found in GBIF
 # in case GBIF is able to match species that were previously missed
 
-sinas_new = sinas_species.loc[~sinas_species["species"].isin(sinas_match["species"])]
+sinas_new = sinas_species.loc[~sinas_species["origTaxon"].isin(sinas_match["origTaxon"])]
 cabi_new = cabi_species.loc[~cabi_species["codeCABI"].isin(cabi_match["codeCABI"])]
 eppo_new = eppo_species.loc[~eppo_species["codeEPPO"].isin(eppo_match["codeEPPO"])]
 daisie_new = daisie_species.loc[~daisie_species["codeDAISIE"].isin(daisie_match["codeDAISIE"])]
@@ -139,8 +138,8 @@ print("Exported DAISIE GBIF matches.")
 
 # SInAS has already been matched
 sinas_gbif = pd.concat([sinas_gbif, sinas_new], ignore_index=True)
-sinas_gbif.rename(columns={"species": "speciesSINAS"}, inplace=True)
-sinas_gbif[["speciesSINAS", "usageKey", "scientificName", "rank", "matchType", "Date", "New"]].to_csv(data_dir + "species lists/gbif_matched/sinas_gbif.csv", index=False)
+sinas_gbif.rename(columns={"origTaxon": "taxonSINAS"}, inplace=True)
+sinas_gbif[["taxonSINAS", "usageKey", "scientificName", "rank", "matchType", "Date", "New"]].to_csv(data_dir + "species lists/gbif_matched/sinas_gbif.csv", index=False)
 print("Exported SInAS GBIF matches.")
 
 # Export the new unmatched species to csv
@@ -150,7 +149,7 @@ new_unmatched = pd.concat([
     sinas_new.loc[sinas_new["usageKey"].isna()],
     eppo_new.loc[eppo_new["usageKey"].isna()],
     daisie_new.loc[daisie_new["usageKey"].isna()]
-    ], ignore_index=True)[["species", "codeCABI", "codeEPPO", "codeDAISIE"]]
+    ], ignore_index=True)[["origTaxon", "codeCABI", "codeEPPO", "codeDAISIE"]]
 
 new_unmatched["New"] = True
 new_unmatched["Date"] = f"{today.year}-{today.month:02d}-{today.day:02d}"

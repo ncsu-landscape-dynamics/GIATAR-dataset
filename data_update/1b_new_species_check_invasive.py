@@ -55,7 +55,7 @@ daisie_new.to_csv(data_dir + "species lists/new/daisie_new.csv", index=False)
 
 # EPPO - has categorizationd
 
-print(f"Getting EPPO categorization for {len(eppo_new)} species")
+print(f"Getting EPPO categorization for {len(eppo_new)} taxa")
 eppo_new["categorization"] = eppo_new.codeEPPO.apply(lambda x: eppo_cat_api(x, token))
 eppo_new["invasive"] = np.where(eppo_new["categorization"].map(len) > 0, True, False)
 
@@ -68,7 +68,7 @@ eppo_gbif_inv["New"] = False
 eppo_gbif_inv = pd.concat([eppo_gbif_inv, eppo_new], ignore_index=True)
 # Since these are all new from GBIF, should be mutually exlcusive
 
-# Note: we may want to periodically check invasive == False values to see if the species have since become invasive
+# Note: we may want to periodically check invasive == False values to see if the taxa have since become invasive
 
 eppo_gbif_inv.to_csv(
     data_dir + "species lists/gbif_matched/eppo_gbif_with_categ.csv", index=False
@@ -89,4 +89,4 @@ new_species.loc[new_species["usageKey"].notna()]["usageKey"].drop_duplicates().t
 
 print(
     f"Exported {len(new_species.loc[new_species['usageKey'].notna()])} new usageKeys, including"
-    f" {len(new_species.loc[new_species['invasive']==True])} invasive species.")
+    f" {len(new_species.loc[new_species['invasive']==True])} invasive taxa.")

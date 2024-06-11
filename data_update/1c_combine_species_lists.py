@@ -24,16 +24,16 @@ daisie_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/daisie_gbif.csv
 
 # Specific row names
 
-cabi_gbif.rename(columns={"species": "speciesCABI"}, inplace=True)
+cabi_gbif.rename(columns={"origTaxon": "taxonCABI"}, inplace=True)
 cabi_gbif["source"] = "CABI"
 
-sinas_gbif.rename(columns={"species": "speciesSINAS"}, inplace=True)
+sinas_gbif.rename(columns={"origTaxon": "taxonSINAS"}, inplace=True)
 sinas_gbif["source"] = "SInAS"
 
-eppo_gbif.rename(columns={"species": "speciesEPPO"}, inplace=True)
+eppo_gbif.rename(columns={"origTaxon": "taxonEPPO"}, inplace=True)
 eppo_gbif["source"] = "EPPO"
 
-daisie_gbif.rename(columns={"species": "speciesDAISIE"}, inplace=True)
+daisie_gbif.rename(columns={"origTaxon": "taxonDAISIE"}, inplace=True)
 daisie_gbif["source"] = "DAISIE"
 
 # Keep the matches
@@ -99,22 +99,22 @@ gbif_records = gbif_records.drop_duplicates("usageKey").sort_index()
 # Rebuild a combined dataframe: for each usageKey, map records from CABI, SInAS, and EPPO
 
 combined_records = pd.merge(
-    left=cabi_match.loc[:, ["speciesCABI", "codeCABI", "usageKey", "invasiveCABI"]],
-    right=sinas_match.loc[:, "speciesSINAS":"usageKey"],
+    left=cabi_match.loc[:, ["taxonCABI", "codeCABI", "usageKey", "invasiveCABI"]],
+    right=sinas_match.loc[:, "taxonSINAS":"usageKey"],
     how="outer",
     on="usageKey",
 )
 
 combined_records = pd.merge(
     left=combined_records,
-    right=eppo_match.loc[:, ["speciesEPPO", "codeEPPO", "usageKey", "invasiveEPPO"]],
+    right=eppo_match.loc[:, ["taxonEPPO", "codeEPPO", "usageKey", "invasiveEPPO"]],
     how="outer",
     on="usageKey",
 )
 
 combined_records = pd.merge(
     left=combined_records,
-    right=daisie_match.loc[:, ["speciesDAISIE", "codeDAISIE", "usageKey"]],
+    right=daisie_match.loc[:, ["taxonDAISIE", "codeDAISIE", "usageKey"]],
     how="outer",
     on="usageKey",
 )
@@ -131,8 +131,8 @@ invasive_all = (
     combined_records.loc[
         (combined_records["invasiveEPPO"] == True)
         | (combined_records["invasiveCABI"] == "True")
-        | (combined_records["speciesSINAS"].notna())
-        | (combined_records["speciesDAISIE"].notna())
+        | (combined_records["taxonSINAS"].notna())
+        | (combined_records["taxonDAISIE"].notna())
     ]
     .reset_index()
     .drop(columns="index")
@@ -150,16 +150,16 @@ print("Saved invasive all source file.")
 # Make the link files
 
 SINAS_link = invasive_all.loc[
-    invasive_all["speciesSINAS"].notna(), ["usageKey", "speciesSINAS"]
+    invasive_all["taxonSINAS"].notna(), ["usageKey", "taxonSINAS"]
 ].reset_index(drop=True).drop_duplicates()
 EPPO_link = invasive_all.loc[
-    invasive_all["codeEPPO"].notna(), ["usageKey", "speciesEPPO", "codeEPPO"]
+    invasive_all["codeEPPO"].notna(), ["usageKey", "taxonEPPO", "codeEPPO"]
 ].reset_index(drop=True).drop_duplicates()
 CABI_link = invasive_all.loc[
-    invasive_all["codeCABI"].notna(), ["usageKey", "speciesCABI", "codeCABI"]
+    invasive_all["codeCABI"].notna(), ["usageKey", "taxonCABI", "codeCABI"]
 ].reset_index(drop=True).drop_duplicates()
 DAISIE_link = invasive_all.loc[
-    invasive_all["codeDAISIE"].notna(), ["usageKey", "speciesDAISIE", "codeDAISIE"]
+    invasive_all["codeDAISIE"].notna(), ["usageKey", "taxonDAISIE", "codeDAISIE"]
 ].reset_index(drop=True).drop_duplicates()
 
 GBIF_backbone = invasive_all[["usageKey"]].drop_duplicates().reset_index(drop=True)

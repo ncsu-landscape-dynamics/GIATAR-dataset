@@ -94,15 +94,15 @@ for year, month in zip(years, months):
 
             # Next, extract species, match EPPO code and then GBIF usageCode
             # Species name
-            section_table["species"] = section_table.apply(
+            section_table["origTaxon"] = section_table.apply(
                 lambda x: get_species(x["Title"]), axis=1
             )
 
             section_table = section_table.merge(
-                species_cols, how="left", right_on="fullname", left_on="species"
+                species_cols, how="left", right_on="fullname", left_on="origTaxon"
             )
             section_table.rename(
-                columns={"code": "codeEPPO", "species": "speciesEPPO"}, inplace=True
+                columns={"code": "codeEPPO", "origTaxon": "taxonEPPO"}, inplace=True
             )
             section_table.drop(columns="fullname", inplace=True)
 
@@ -125,7 +125,7 @@ for year, month in zip(years, months):
 # Append to exisiting records
 eppo_first_records = pd.read_csv(f"{data_dir}/EPPO data/EPPO_first_reports.csv", dtype={"usageKey":str})
 section_tables = pd.concat(
-    [eppo_first_records, section_tables.drop(columns="speciesEPPO")]
+    [eppo_first_records, section_tables.drop(columns="taxonEPPO")]
 ).drop_duplicates()
 
 section_tables.to_csv(f"{data_dir}/EPPO data/EPPO_first_reports.csv", index=False)

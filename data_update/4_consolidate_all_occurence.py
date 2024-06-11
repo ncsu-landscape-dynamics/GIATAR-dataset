@@ -185,7 +185,7 @@ ASFR_occur = pd.read_csv(
 )
 
 ASFR_occur.rename(
-    columns={"TaxonName": "species", "Region": "location", "FirstRecord": "year", "Source": "Reference"},
+    columns={"TaxonName": "origTaxon", "Region": "location", "FirstRecord": "year", "Source": "Reference"},
     inplace=True,
 )
 
@@ -194,16 +194,16 @@ ASFR_link = pd.read_csv(
     data_dir + "link files/ASFR_link.csv",
         # usageKey column as string
         dtype={"usageKey": "str"}
-        ).rename(columns={"speciesASFR":"species"})
+        ).rename(columns={"taxonASFR":"origTaxon"})
 
-ASFR_merged = pd.merge(left=ASFR_occur, right=ASFR_link, how="left", on="species")
+ASFR_merged = pd.merge(left=ASFR_occur, right=ASFR_link, how="left", on="origTaxon")
 
 ASFR_merged = ASFR_merged.loc[
     ASFR_merged["usageKey"].notna()
 ]
 
 # Drop species column
-ASFR_merged.drop(columns=["species"], inplace=True)
+ASFR_merged.drop(columns=["origTaxon"], inplace=True)
 
 # Add a type column
 ASFR_merged["Type"] = "First report"
