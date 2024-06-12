@@ -171,12 +171,12 @@ EPPO_link.to_csv(data_dir + "link files/EPPO_link.csv", index=False)
 CABI_link.to_csv(data_dir + "link files/CABI_link.csv", index=False)
 DAISIE_link.to_csv(data_dir + "link files/DAISIE_link.csv", index=False)
 
-GBIF_backbone.to_csv(data_dir + "link files/GBIF_db_backbone.csv", index=False)
+GBIF_backbone.to_csv(data_dir + "link files/all_usageKeys.csv", index=False)
 
 print("Saved all link files.")
 
 # Replace the GBIF invasive taxonomy backbone file
-
+# Last updated: May 2024
 gbif_all = pd.read_csv(data_dir + "species lists/by_database/gbif_all_small.csv", sep='\t')
 
 # Rename taxonKey to usageKey
