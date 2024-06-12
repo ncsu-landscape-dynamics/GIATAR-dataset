@@ -174,45 +174,42 @@ DAISIE_merged = pd.merge(left=DAISIE_occur, right=DAISIE_link, how="left", on="c
 # Drop the column codeDAISIE
 DAISIE_merged.drop(columns=["codeDAISIE"], inplace=True)
 
-#### ASFR data
+#### SInAS data
 
-print("Reading and cleaning ASFR data...")
+print("Reading and cleaning SInAS data...")
 
 # Read file and set column names
-ASFR_occur = pd.read_csv(
-    data_dir + "species lists/by_database/AlienSpeciesFirstRecord.csv",
-    usecols=["TaxonName", "Region", "FirstRecord", "Source"],
+SINAS_occur = pd.read_csv(
+    data_dir + "species lists/by_database/SInAS_AlienSpeciesDB_2.5.csv",
+    sep=" ",
+    usecols=["taxonID", "Taxon", "Location", "eventDate", "references"],
 )
 
-ASFR_occur.rename(
-    columns={"TaxonName": "origTaxon", "Region": "location", "FirstRecord": "year", "Source": "Reference"},
+SINAS_occur.rename(
+    columns={"taxonID": "usageKey",
+             "Taxon": "origTaxon", 
+             "Location": "location", 
+             "eventDate": "year", 
+             "references": "Reference"},
     inplace=True,
 )
 
-# Add GBIF usageKey to ASFR species
-ASFR_link = pd.read_csv(
-    data_dir + "link files/ASFR_link.csv",
-        # usageKey column as string
-        dtype={"usageKey": "str"}
-        ).rename(columns={"taxonASFR":"origTaxon"})
-
-ASFR_merged = pd.merge(left=ASFR_occur, right=ASFR_link, how="left", on="origTaxon")
-
-ASFR_merged = ASFR_merged.loc[
-    ASFR_merged["usageKey"].notna()
+# SInAS data already includes a usageKey
+SINAS_merged = SINAS_occur.loc[
+    SINAS_occur["usageKey"].notna()
 ]
 
 # Drop species column
-ASFR_merged.drop(columns=["origTaxon"], inplace=True)
+SINAS_merged.drop(columns=["origTaxon"], inplace=True)
 
 # Add a type column
-ASFR_merged["Type"] = "First report"
+SINAS_merged["Type"] = "First report"
 
 # Add a source column
-ASFR_merged["Source"] = "ASFR"
+SINAS_merged["Source"] = "SINAS"
 
 # Add native column
-ASFR_merged["Native"] = False
+SINAS_merged["Native"] = False
 
 #### EPPO data
 ## EPPO reporting
@@ -349,10 +346,10 @@ GBIF_countries = pd.merge(
     right_on="ISO2",
 )
 
-## ASFR - countries 
+## SINAS - countries 
 
-ASFR_countries = pd.merge(
-    left=ASFR_merged,
+SINAS_countries = pd.merge(
+    left=SINAS_merged,
     right=countries_match,
     how="left",
     left_on="location",
@@ -418,8 +415,8 @@ CABI_countries = match_countries(CABI_countries)
 print("Mapping GBIF countries...")
 GBIF_countries = match_countries(GBIF_countries)
 
-print("Mapping ASFR countries...")
-ASFR_countries = match_countries(ASFR_countries)
+print("Mapping SINAS countries...")
+SINAS_countries = match_countries(SINAS_countries)
 
 print("Mapping DAISIE countries...")
 DAISIE_countries = match_countries(DAISIE_countries)
@@ -443,7 +440,7 @@ native_ranges.loc[native_ranges.DAISIE_region.isna(), "location"] = native_range
 
 CABI_countries.drop(columns=["ISO2", "NAME"], inplace=True)
 GBIF_countries.drop(columns=["ISO2", "NAME"], inplace=True)
-ASFR_countries.drop(columns=["ISO2","NAME"], inplace=True)
+SINAS_countries.drop(columns=["ISO2","NAME"], inplace=True)
 DAISIE_countries.drop(columns=["NAME", "code_region"], inplace=True)
 native_ranges = native_ranges[["usageKey","ISO3","location", "Native", "Source", "Reference"]]
 
@@ -451,7 +448,7 @@ native_ranges = native_ranges[["usageKey","ISO3","location", "Native", "Source",
 
 CABI_countries.drop_duplicates(inplace=True)
 GBIF_countries.drop_duplicates(inplace=True)
-ASFR_countries.drop_duplicates(inplace=True)
+SINAS_countries.drop_duplicates(inplace=True)
 EPPO_countries.drop_duplicates(inplace=True)
 DAISIE_countries.drop_duplicates(inplace=True)
 
@@ -461,7 +458,7 @@ print("Writing country-matches to csv...")
 
 CABI_countries.to_csv(data_dir + "occurrences/CABI_first_records.csv", index=False)
 GBIF_countries.to_csv(data_dir + "occurrences/GBIF_first_records.csv", index=False)
-ASFR_countries.to_csv(data_dir + "occurrences/ASFR_first_records.csv", index=False)
+SINAS_countries.to_csv(data_dir + "occurrences/SINAS_first_records.csv", index=False)
 EPPO_countries.to_csv(data_dir + "occurrences/EPPO_first_records.csv", index=False)
 DAISIE_countries.to_csv(data_dir + "occurrences/DAISIE_first_records.csv", index=False)
 
@@ -470,7 +467,7 @@ native_ranges.to_csv(data_dir + "occurrences/native_ranges.csv", index=False)
 # Combine all records
 
 all_records = pd.concat(
-    [CABI_countries, GBIF_countries, ASFR_countries, EPPO_countries, DAISIE_countries, native_ranges]
+    [CABI_countries, GBIF_countries, SINAS_countries, EPPO_countries, DAISIE_countries, native_ranges]
 )
 
 # Harmonize data types in all_records

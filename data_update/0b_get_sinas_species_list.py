@@ -18,8 +18,9 @@ data_dir = os.getenv("DATA_PATH")
 # Get today's date
 today = date.today()
 
-# Download the latest SInAS list from https://zenodo.org/record/3690742#.ZDbV4nbMIQ8 (if available)
-# and save as species lists/by_database/AlienSpeciesFirstRecord.csv
+# Download the latest SInAS list and records from https://zenodo.org/records/10038256 (if available)
+# and save as:  species lists/by_database/SInAS_AlienSpeciesDB_2.5_FullTaxaList.csv
+# and: species lists/by_database/SInAS_AlienSpeciesDB_2.5.csv
 
 sinas_list = pd.read_csv(data_dir + "species lists/by_database/SInAS_AlienSpeciesDB_2.5_FullTaxaList.csv", sep=" ")
 
