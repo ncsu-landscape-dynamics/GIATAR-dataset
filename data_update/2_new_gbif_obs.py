@@ -42,8 +42,8 @@ new_invasive_species = species_list.loc[species_list['usageKey'].isin(new_keys['
 prev_species = species_list.loc[~species_list['usageKey'].isin(new_keys['usageKey']), "usageKey"].unique()
 
 # Convert all usageKeys to integers
-new_invasive_species = [int(x) for x in new_invasive_species]
-prev_species = [int(x) for x in prev_species]
+new_invasive_species = [int(float(x)) for x in new_invasive_species]
+prev_species = [int(float(x)) for x in prev_species]
 
 # For previous species, we only need new data
 # Get years for which data is needed
@@ -191,5 +191,5 @@ new_keys.to_csv(data_dir + "species lists/new/new_usageKeys.csv", index=False)
 
 # Update the date in the .env file
 
-os.environ["GBIF_OBS_UPDATED"]=f"'{today.year}-{today.month:02d}-{today.day:02d}\n'"
-dotenv.set_key('.env', "key", os.environ["GBIF_OBS_UPDATED"])
+os.environ["GBIF_OBS_UPDATED"]=f"{today.year}-{today.month:02d}-{today.day:02d}"
+dotenv.set_key('.env', "GBIF_OBS_UPDATED", os.environ["GBIF_OBS_UPDATED"])

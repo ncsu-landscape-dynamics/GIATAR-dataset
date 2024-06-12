@@ -130,5 +130,5 @@ section_tables = pd.concat(
 
 section_tables.to_csv(f"{data_dir}/EPPO data/EPPO_first_reports.csv", index=False)
 
-os.environ["EPPO_REP_UPDATED"]=f"'{today.year}-{today.month:02d}-{today.day:02d}\n'"
-dotenv.set_key('.env', "key", os.environ["EPPO_REP_UPDATED"])
+os.environ["EPPO_REP_UPDATED"]=f"{today.year}-{today.month:02d}-{today.day:02d}"
+dotenv.set_key('.env', "EPPO_REP_UPDATED", os.environ["EPPO_REP_UPDATED"])
