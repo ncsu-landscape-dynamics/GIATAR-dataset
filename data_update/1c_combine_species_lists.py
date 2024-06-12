@@ -1,6 +1,6 @@
 """
 File: data_update/1c_combine_species_lists.py
-Author: Ariel Saffer
+Author: Ariel Saffer + Thom Worm
 Date created: 2023-04-14
 Description: Combine the species lists from SInAS, CABI, and EPPO using the GBIF usageKey
 """
@@ -17,10 +17,19 @@ data_dir = os.getenv("DATA_PATH")
 
 # Bring in new species lists
 
-sinas_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/sinas_gbif.csv", dtype={"usageKey":str})
-cabi_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/cabi_gbif.csv", dtype={"usageKey":str})
-eppo_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/eppo_gbif.csv", dtype={"usageKey":str})
-daisie_gbif = pd.read_csv(data_dir + "species lists/gbif_matched/daisie_gbif.csv", dtype={"usageKey":str})
+
+sinas_gbif = pd.read_csv(
+    data_dir + "species lists/gbif_matched/sinas_gbif.csv", dtype={"usageKey": str}
+)
+cabi_gbif = pd.read_csv(
+    data_dir + "species lists/gbif_matched/cabi_gbif.csv", dtype={"usageKey": str}
+)
+eppo_gbif = pd.read_csv(
+    data_dir + "species lists/gbif_matched/eppo_gbif.csv", dtype={"usageKey": str}
+)
+daisie_gbif = pd.read_csv(
+    data_dir + "species lists/gbif_matched/daisie_gbif.csv", dtype={"usageKey": str}
+)
 
 # Specific row names
 
@@ -122,7 +131,10 @@ combined_records = pd.merge(
 # Add back in one copy of the GBIF data
 
 combined_records = pd.merge(
-    left=combined_records, right=gbif_records, how="left", on="usageKey",
+    left=combined_records,
+    right=gbif_records,
+    how="left",
+    on="usageKey",
 )
 
 # Any species that appears in SInAS, has a categorization in EPPO, or is an Invasive species/Pest/Pest vector datasheet type in CABI
@@ -138,7 +150,7 @@ invasive_all = (
     .drop(columns="index")
 )
 
-# Drop duplicated rows 
+# Drop duplicated rows
 invasive_all = invasive_all.drop_duplicates(keep="first")
 
 # Write to csv
@@ -149,18 +161,32 @@ print("Saved invasive all source file.")
 
 # Make the link files
 
-SINAS_link = invasive_all.loc[
-    invasive_all["taxonSINAS"].notna(), ["usageKey", "taxonSINAS"]
-].reset_index(drop=True).drop_duplicates()
-EPPO_link = invasive_all.loc[
-    invasive_all["codeEPPO"].notna(), ["usageKey", "taxonEPPO", "codeEPPO"]
-].reset_index(drop=True).drop_duplicates()
-CABI_link = invasive_all.loc[
-    invasive_all["codeCABI"].notna(), ["usageKey", "taxonCABI", "codeCABI"]
-].reset_index(drop=True).drop_duplicates()
-DAISIE_link = invasive_all.loc[
-    invasive_all["codeDAISIE"].notna(), ["usageKey", "taxonDAISIE", "codeDAISIE"]
-].reset_index(drop=True).drop_duplicates()
+SINAS_link = (
+    invasive_all.loc[invasive_all["taxonSINAS"].notna(), ["usageKey", "taxonSINAS"]]
+    .reset_index(drop=True)
+    .drop_duplicates()
+)
+EPPO_link = (
+    invasive_all.loc[
+        invasive_all["codeEPPO"].notna(), ["usageKey", "taxonEPPO", "codeEPPO"]
+    ]
+    .reset_index(drop=True)
+    .drop_duplicates()
+)
+CABI_link = (
+    invasive_all.loc[
+        invasive_all["codeCABI"].notna(), ["usageKey", "taxonCABI", "codeCABI"]
+    ]
+    .reset_index(drop=True)
+    .drop_duplicates()
+)
+DAISIE_link = (
+    invasive_all.loc[
+        invasive_all["codeDAISIE"].notna(), ["usageKey", "taxonDAISIE", "codeDAISIE"]
+    ]
+    .reset_index(drop=True)
+    .drop_duplicates()
+)
 
 GBIF_backbone = invasive_all[["usageKey"]].drop_duplicates().reset_index(drop=True)
 
@@ -177,7 +203,9 @@ print("Saved all link files.")
 
 # Replace the GBIF invasive taxonomy backbone file
 # Last updated: May 2024
-gbif_all = pd.read_csv(data_dir + "species lists/by_database/gbif_all_small.csv", sep='\t')
+gbif_all = pd.read_csv(
+    data_dir + "species lists/by_database/gbif_all_small.csv", sep="\t"
+)
 
 # Rename taxonKey to usageKey
 
@@ -191,6 +219,6 @@ gbif_all["usageKey"] = gbif_all["usageKey"].astype("int64").astype(str)
 
 gbif_invasive = gbif_all.loc[gbif_all["usageKey"].isin(GBIF_backbone["usageKey"])]
 
-# Save to csv 
+# Save to csv
 
 gbif_invasive.to_csv(data_dir + "GBIF data/GBIF_backbone_invasive.csv", index=False)

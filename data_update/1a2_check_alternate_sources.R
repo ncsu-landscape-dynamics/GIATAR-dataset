@@ -315,6 +315,9 @@ generate_usageKey <- function(species) {
   }
   return(usageKey)
 }
+generated_usageKey_species <- data.frame(species = character(0), usageKey = character(0)) # Empty dataframe to store species names and generated usage keys
+
+
 update_usageKey <- function(df, other_taxonomy_data) {
   for (i in seq_len(nrow(df))) {
     # Check if usageKey is NA for the current row
@@ -326,7 +329,9 @@ update_usageKey <- function(df, other_taxonomy_data) {
         df$usageKey[i] <- other_taxonomy_data$usageKey[match(df$species[i], other_taxonomy_data$user_supplied_name)]
       } else {
         # Generate usageKey if species is not found or has NA in other_taxonomy_data
-        df$usageKey[i] <- generate_usageKey(df$species[i])
+        generated_key <- generate_usageKey(df$species[i])
+        generated_usageKey_species <- rbind(generated_usageKey_species, data.frame(species = df$species[i], usageKey = generated_key))
+        df$usageKey[i] <- generated_key
       }
     }
   }
@@ -356,6 +361,7 @@ eppo_gbif <- source_dataframes[[3]]
 print(cabi_gbif)
 print(asfr_gbif)
 print(eppo_gbif)
+write.csv(generated_usageKey_species, file = "generated_usageKey_species.csv", row.names = FALSE)
 
 write.csv(cabi_gbif, file = "cabi_gbif.csv", row.names = FALSE)
 write.csv(asfr_gbif, file = "asfr_gbif.csv", row.names = FALSE)
