@@ -88,17 +88,17 @@ def get_usageKey(species_name):
         return invasive_all_source.loc[
             invasive_all_source["canonicalName"] == species_name, "usageKey"
         ].values[0]
-    elif species_name in invasive_all_source["speciesASFR"].values:
+    elif species_name in invasive_all_source["taxonSINAS"].values:
         return invasive_all_source.loc[
-            invasive_all_source["speciesASFR"] == species_name, "usageKey"
+            invasive_all_source["taxonSINAS"] == species_name, "usageKey"
         ].values[0]
-    elif species_name in invasive_all_source["speciesEPPO"].values:
+    elif species_name in invasive_all_source["taxonEPPO"].values:
         return invasive_all_source.loc[
-            invasive_all_source["speciesEPPO"] == species_name, "usageKey"
+            invasive_all_source["taxonEPPO"] == species_name, "usageKey"
         ].values[0]
-    elif species_name in invasive_all_source["speciesCABI"].values:
+    elif species_name in invasive_all_source["taxonCABI"].values:
         return invasive_all_source.loc[
-            invasive_all_source["speciesCABI"] == species_name, "usageKey"
+            invasive_all_source["taxonCABI"] == species_name, "usageKey"
         ].values[0]
     elif species_name in invasive_all_source["usageKey"].values:
         return species_name
@@ -106,9 +106,9 @@ def get_usageKey(species_name):
         return invasive_all_source.loc[
             invasive_all_source["speciesGBIF"] == species_name, "usageKey"
         ].values[0]
-    elif species_name in invasive_all_source["speciesDAISIE"].values:
+    elif species_name in invasive_all_source["taxonDAISIE"].values:
         return invasive_all_source.loc[
-            invasive_all_source["speciesDAISIE"] == species_name, "usageKey"
+            invasive_all_source["taxonDAISIE"] == species_name, "usageKey"
         ].values[0]
     # elif species name is digits or starts with "xx" or "XX" return species name
     elif (
@@ -129,22 +129,22 @@ def get_usageKey(species_name):
 def get_all_species():
     # iterate through all rows in invasive_all_source and return a list of all species names
     # if rank is 'SPECIES', 'FORM', 'SUBSPECIES', 'VARIETY' return canonicalName
-    # otherwise if speciesASFR or speciesCABI is not null return that
+    # otherwise if taxonSINAS or taxonCABI is not null return that
     # collect the result of all rows into a list and return that
     species_list = []
     for index, row in invasive_all_source.iterrows():
         if row["rank"] in ["SPECIES", "FORM", "SUBSPECIES", "VARIETY"]:
             species_list.append(row["canonicalName"])
-        elif pd.notnull(row["speciesEPPO"]):
-            species_list.append(row["speciesEPPO"])
-        elif pd.notnull(row["speciesASFR"]):
-            # if row['speciesASFR'] in species_list, append row['speciesCABI'] instead
-            if row["speciesASFR"] in species_list:
-                species_list.append(row["speciesCABI"])
+        elif pd.notnull(row["taxonEPPO"]):
+            species_list.append(row["taxonEPPO"])
+        elif pd.notnull(row["taxonSINAS"]):
+            # if row['taxonSINAS'] in species_list, append row['taxonCABI'] instead
+            if row["taxonSINAS"] in species_list:
+                species_list.append(row["taxonCABI"])
             else:
-                species_list.append(row["speciesASFR"])
-        elif pd.notnull(row["speciesCABI"]):
-            species_list.append(row["speciesCABI"])
+                species_list.append(row["taxonSINAS"])
+        elif pd.notnull(row["taxonCABI"]):
+            species_list.append(row["taxonCABI"])
     return species_list
 
 
@@ -285,7 +285,7 @@ def get_ecology(species_name, check_exists=False):
         r"DAISIE data\DAISIE_habitat.csv", dtype={"usageKey": "str"}
     )
     CABI_plant_trade = pd.read_csv(
-        r"CAIB data\CABI_tables\toPlantTrade.csv", dtype={"usageKey": "str"}
+        r"CABI data\CABI_tables\toplantTrade.csv", dtype={"usageKey": "str"}
     )
     # return a list of all rows where usageKey = usageKey
     # place rows into a dataframe and put into results_dict with key = filename
@@ -608,7 +608,7 @@ def get_trait_table_list():
         "CABI_airtemp",
         "CABI_climate",
         "CABI_environments",
-        "CABI_lat_alt",
+        "CABI_latitude_altitude",
         "CABI_natural_enemies",
         "CABI_water_tolerances",
         "CABI_wood_packaging",
@@ -641,7 +641,9 @@ def get_trait_table(table_name, usageKey=None):
         if table_name == "CABI_rainfall":
             file_path = "CABI data/CABI_tables/torainfall.csv"
         elif table_name == "CABI_airtemp":
-            file_path = "CABI data/CABI_tables/toairtemp.csv"
+            file_path = "CABI data/CABI_tables/toairTemperature.csv"
+        elif table_name == "CABI_latitude_altitude":
+            file_path = "CABI data/CABI_tables/tolatitudeAndAltitudeRanges.csv"
         # Add similar conditions for other tables
 
         if file_path is not None:

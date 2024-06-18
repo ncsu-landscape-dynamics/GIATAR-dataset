@@ -59,18 +59,18 @@ get_usageKey <- function(species_name) {
   
   if ("canonicalName" %in% colnames(invasive_all_source) && species_name %in% invasive_all_source$canonicalName) {
     return(invasive_all_source$usageKey[invasive_all_source$canonicalName == species_name][1])
-  } else if ("speciesASFR" %in% colnames(invasive_all_source) && species_name %in% invasive_all_source$speciesASFR) {
-    return(invasive_all_source$usageKey[invasive_all_source$speciesASFR == species_name][1])
-  } else if ("speciesEPPO" %in% colnames(invasive_all_source) && species_name %in% invasive_all_source$speciesEPPO) {
-    return(invasive_all_source$usageKey[invasive_all_source$speciesEPPO == species_name][1])
-  } else if ("speciesCABI" %in% colnames(invasive_all_source) && species_name %in% invasive_all_source$speciesCABI) {
-    return(invasive_all_source$usageKey[invasive_all_source$speciesCABI == species_name][1])
+  } else if ("taxonSINAS" %in% colnames(invasive_all_source) && species_name %in% invasive_all_source$taxonSINAS) {
+    return(invasive_all_source$usageKey[invasive_all_source$taxonSINAS == species_name][1])
+  } else if ("taxonEPPO" %in% colnames(invasive_all_source) && species_name %in% invasive_all_source$taxonEPPO) {
+    return(invasive_all_source$usageKey[invasive_all_source$taxonEPPO == species_name][1])
+  } else if ("taxonCABI" %in% colnames(invasive_all_source) && species_name %in% invasive_all_source$taxonCABI) {
+    return(invasive_all_source$usageKey[invasive_all_source$taxonCABI == species_name][1])
   } else if ("usageKey" %in% colnames(invasive_all_source) && species_name %in% invasive_all_source$usageKey) {
     return(species_name)
   } else if ("canonicalName" %in% colnames(invasive_all_source) && species_name %in% invasive_all_source$canonicalName) {
     return(invasive_all_source$usageKey[invasive_all_source$speciesGBIF == species_name][1])
-  } else if ("speciesDAISIE" %in% colnames(invasive_all_source) && species_name %in% invasive_all_source$speciesDAISIE) {
-    return(invasive_all_source$usageKey[invasive_all_source$speciesDAISIE == species_name][1])
+  } else if ("taxonDAISIE" %in% colnames(invasive_all_source) && species_name %in% invasive_all_source$taxonDAISIE) {
+    return(invasive_all_source$usageKey[invasive_all_source$taxonDAISIE == species_name][1])
   } else if (grepl("^[xX]{2}", species_name) || grepl("^\\d+$", species_name)) {
     return(species_name)
   } else {
@@ -91,16 +91,16 @@ get_all_species <- function() {
   for (i in 1:nrow(invasive_all_source)) {
     if (invasive_all_source$rank[i] %in% c("SPECIES", "FORM", "SUBSPECIES", "VARIETY")) {
       species_list <- append(species_list, invasive_all_source$canonicalName[i])
-    } else if (!is.na(invasive_all_source$speciesEPPO[i])) {
-      species_list <- append(species_list, invasive_all_source$speciesEPPO[i])
-    } else if (!is.na(invasive_all_source$speciesASFR[i])) {
-      if (invasive_all_source$speciesASFR[i] %in% species_list) {
-        species_list <- append(species_list, invasive_all_source$speciesCABI[i])
+    } else if (!is.na(invasive_all_source$taxonEPPO[i])) {
+      species_list <- append(species_list, invasive_all_source$taxonEPPO[i])
+    } else if (!is.na(invasive_all_source$taxonSINAS[i])) {
+      if (invasive_all_source$taxonSINAS[i] %in% species_list) {
+        species_list <- append(species_list, invasive_all_source$taxonCABI[i])
       } else {
-        species_list <- append(species_list, invasive_all_source$speciesASFR[i])
+        species_list <- append(species_list, invasive_all_source$taxonSINAS[i])
       }
-    } else if (!is.na(invasive_all_source$speciesCABI[i])) {
-      species_list <- append(species_list, invasive_all_source$speciesCABI[i])
+    } else if (!is.na(invasive_all_source$taxonCABI[i])) {
+      species_list <- append(species_list, invasive_all_source$taxonCABI[i])
     }
   }
   return(species_list)
