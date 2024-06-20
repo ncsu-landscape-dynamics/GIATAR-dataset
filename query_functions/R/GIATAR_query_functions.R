@@ -1,22 +1,20 @@
+library(dplyr)
+library(readr)
+library(dotenv)
 
-## GIATAR query functions
-## Converted with: https://www.codeconvert.ai/app
-
-create_dotenv <- function(dp) {
-  f <- file(".env", "w")
-  writeLines(paste0("data_path=", dp), f)
-  close(f)
-}
-
-if (file.exists(".env")) {
-  data_path <- dotenv::get_key(".env", "data_path")
-  setwd(data_path)
+if (!length(Sys.getenv("GIATAR_path")) | Sys.getenv("GIATAR_path") == "" ) {
+  # Prompt the user to enter GIATAR_path
+  cat("GIATAR_path environment variable not found.\n")
+  GIATAR_path <- readline(prompt = "Enter GIATAR_path: ")
+  
+  # Set the entered value as an environment variable
+  Sys.setenv(GIATAR_path = GIATAR_path)
 } else {
-  print("No .env file found. Please use `create_dotenv()` to create a .env file")
-  dp <- readline("Please enter the path to the data folder: ")
-  create_dotenv(dp)
+  # Retrieve the value of GIATAR_path environment variable
+  GIATAR_path <- Sys.getenv("GIATAR_path")
 }
 
+setwd(GIATAR_path)
 
 invasive_all_source <- read_csv("species lists/invasive_all_source.csv", col_types = cols(usageKey = col_character()))
 first_records <- read_csv("occurrences/first_records.csv", col_types = cols(usageKey = col_character()), lazy = FALSE)
@@ -372,24 +370,26 @@ get_common_names <- function(species_name, check_exists=FALSE) {
   
   usageKey <- get_usageKey(species_name)
   
-  DAISIE_vernacular <- read.csv("DAISIE data/DAISIE_vernacular_names.csv", 
-                                stringsAsFactors=FALSE)
-  
-  EPPO_names <- read.csv("EPPO data/EPPO_names.csv", 
-                         stringsAsFactors=FALSE)
+  # Assume DAISIE_vernacular and EPPO_names are available in the global environment
   
   results_dict <- list()
   
   if (usageKey %in% DAISIE_vernacular$usageKey) {
-    results_dict$DAISIE_vernacular <- DAISIE_vernacular[DAISIE_vernacular$usageKey == usageKey, ]
+    filtered_DAISIE <- DAISIE_vernacular[DAISIE_vernacular$usageKey == usageKey, ]
+    results_dict$DAISIE_vernacular <- filtered_DAISIE[rowSums(is.na(filtered_DAISIE)) < ncol(filtered_DAISIE), ]
   }
   
-  results_dict$EPPO_names <- EPPO_names[EPPO_names$usageKey == usageKey, ]
+  if (usageKey %in% EPPO_names$usageKey) {
+    filtered_EPPO <- EPPO_names[EPPO_names$usageKey == usageKey, ]
+    results_dict$EPPO_names <- filtered_EPPO[rowSums(is.na(filtered_EPPO)) < ncol(filtered_EPPO), ]
+  }
   
+  # Remove empty elements from the results_dict
   results_dict <- results_dict[sapply(results_dict, function(x) !is.null(x) && nrow(x) > 0)]
   
   return(results_dict)
 }
+
 get_trait_table_list <- function() {
   trait_tables <- c(
     "CABI_rainfall",
@@ -424,7 +424,7 @@ get_trait_table <- function(table_name, usageKey = NULL) {
     file_path <- switch(
       table_name,
       CABI_rainfall = "CABI data/CABI_tables/torainfall.csv",
-      CABI_airtemp = "CABI data/CABI_tables/toairtemp.csv",
+      CABI_airtemp = "CABI data/CABI_tables/toairTemperature.csv",
       CABI_climate = "CABI data/CABI_tables/toclimate.csv",
       CABI_environments = "CABI data/CABI_tables/toenvironments.csv",
       CABI_lat_alt = "CABI data/CABI_tables/tolatitudeAndAltitudeRanges.csv",
