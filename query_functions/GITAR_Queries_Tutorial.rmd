@@ -32,25 +32,29 @@ Unique ID Keys for species in the database are referred to as `usageKeys`, follo
 ## Basic Operations
 
 ```{r setup, include=FALSE}
+```
+
+
+```{r setup, include=FALSE}
 # Load necessary libraries
 library(dplyr)
 library(tidyr)
 library(rgbif)
-source("GIATAR_query_functions.R")
+source("GIATAR_query_functions.r")
 
-# Set the path to data
-data_path <- "path/to/your/data"
+## Set the path to data
+
 # Basic operations
 # Get all species
-get_all_species <- get_all_species()
-get_all_species
+get_all_species()
+
 
 # Check if species exists and get usageKey
 check_species_exists("Ailanthus altissima")
 get_usageKey("Ailanthus altissima")
 
 # Pull some introduction records
-get_first_introductions("Apis mellifera", import_additional_native_info = TRUE)
+get_first_introductions("Apis mellifera", import_additional_native_info = T)
 
 # Pull ecology information
 get_ecology("Thrips tabaci")
@@ -62,7 +66,7 @@ get_hosts_and_vectors('Icerya purchasi')
 get_native_ranges("Apis mellifera")
 
 # Get common names
-get_common_names("Pancratium maritimum")
+cnms <- get_common_names("Pancratium maritimum")
 
 # Get usageKey
 get_usageKey("Pancratium maritimum")
@@ -72,3 +76,5 @@ get_trait_table_list()
 
 # Get trait table
 get_trait_table('CABI_airtemp')
+```
+
