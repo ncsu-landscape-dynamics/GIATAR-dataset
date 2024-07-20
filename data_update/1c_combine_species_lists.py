@@ -2,7 +2,7 @@
 File: data_update/1c_combine_species_lists.py
 Author: Ariel Saffer + Thom Worm
 Date created: 2023-04-14
-Description: Combine the species lists from ASFR, CABI, and EPPO using the GBIF usageKey
+Description: Combine the species lists from SInAS, CABI, and EPPO using the GBIF usageKey
 """
 
 import pandas as pd
@@ -17,8 +17,9 @@ data_dir = os.getenv("DATA_PATH")
 
 # Bring in new species lists
 
-asfr_gbif = pd.read_csv(
-    data_dir + "species lists/gbif_matched/asfr_gbif.csv", dtype={"usageKey": str}
+
+sinas_gbif = pd.read_csv(
+    data_dir + "species lists/gbif_matched/sinas_gbif.csv", dtype={"usageKey": str}
 )
 cabi_gbif = pd.read_csv(
     data_dir + "species lists/gbif_matched/cabi_gbif.csv", dtype={"usageKey": str}
@@ -32,22 +33,22 @@ daisie_gbif = pd.read_csv(
 
 # Specific row names
 
-cabi_gbif.rename(columns={"species": "speciesCABI"}, inplace=True)
+cabi_gbif.rename(columns={"origTaxon": "taxonCABI"}, inplace=True)
 cabi_gbif["source"] = "CABI"
 
-asfr_gbif.rename(columns={"species": "speciesASFR"}, inplace=True)
-asfr_gbif["source"] = "ASFR"
+sinas_gbif.rename(columns={"origTaxon": "taxonSINAS"}, inplace=True)
+sinas_gbif["source"] = "SInAS"
 
-eppo_gbif.rename(columns={"species": "speciesEPPO"}, inplace=True)
+eppo_gbif.rename(columns={"origTaxon": "taxonEPPO"}, inplace=True)
 eppo_gbif["source"] = "EPPO"
 
-daisie_gbif.rename(columns={"species": "speciesDAISIE"}, inplace=True)
+daisie_gbif.rename(columns={"origTaxon": "taxonDAISIE"}, inplace=True)
 daisie_gbif["source"] = "DAISIE"
 
 # Keep the matches
 
 cabi_match = cabi_gbif.loc[cabi_gbif["usageKey"].notna()]
-asfr_match = asfr_gbif.loc[asfr_gbif["usageKey"].notna()]
+sinas_match = sinas_gbif.loc[sinas_gbif["usageKey"].notna()]
 eppo_match = eppo_gbif.loc[eppo_gbif["usageKey"].notna()]
 daisie_match = daisie_gbif.loc[daisie_gbif["usageKey"].notna()]
 
@@ -92,7 +93,7 @@ gbif_records = (
     pd.concat(
         [
             cabi_match.loc[:, "usageKey":"rank"],
-            asfr_match.loc[:, "usageKey":"rank"],
+            sinas_match.loc[:, "usageKey":"rank"],
             eppo_match.loc[:, "usageKey":"rank"],
             daisie_match.loc[:, "usageKey":"rank"],
         ],
@@ -104,25 +105,25 @@ gbif_records = (
 gbif_records = gbif_records.drop_duplicates("usageKey").sort_index()
 
 
-# Rebuild a combined dataframe: for each usageKey, map records from CABI, ASFR, and EPPO
+# Rebuild a combined dataframe: for each usageKey, map records from CABI, SInAS, and EPPO
 
 combined_records = pd.merge(
-    left=cabi_match.loc[:, ["speciesCABI", "codeCABI", "usageKey", "invasiveCABI"]],
-    right=asfr_match.loc[:, "speciesASFR":"usageKey"],
+    left=cabi_match.loc[:, ["taxonCABI", "codeCABI", "usageKey", "invasiveCABI"]],
+    right=sinas_match.loc[:, "taxonSINAS":"usageKey"],
     how="outer",
     on="usageKey",
 )
 
 combined_records = pd.merge(
     left=combined_records,
-    right=eppo_match.loc[:, ["speciesEPPO", "codeEPPO", "usageKey", "invasiveEPPO"]],
+    right=eppo_match.loc[:, ["taxonEPPO", "codeEPPO", "usageKey", "invasiveEPPO"]],
     how="outer",
     on="usageKey",
 )
 
 combined_records = pd.merge(
     left=combined_records,
-    right=daisie_match.loc[:, ["speciesDAISIE", "codeDAISIE", "usageKey"]],
+    right=daisie_match.loc[:, ["taxonDAISIE", "codeDAISIE", "usageKey"]],
     how="outer",
     on="usageKey",
 )
@@ -136,14 +137,14 @@ combined_records = pd.merge(
     on="usageKey",
 )
 
-# Any species that appears in ASFR, has a categorization in EPPO, or is an Invasive species/Pest/Pest vector datasheet type in CABI
+# Any species that appears in SInAS, has a categorization in EPPO, or is an Invasive species/Pest/Pest vector datasheet type in CABI
 
 invasive_all = (
     combined_records.loc[
         (combined_records["invasiveEPPO"] == True)
         | (combined_records["invasiveCABI"] == "True")
-        | (combined_records["speciesASFR"].notna())
-        | (combined_records["speciesDAISIE"].notna())
+        | (combined_records["taxonSINAS"].notna())
+        | (combined_records["taxonDAISIE"].notna())
     ]
     .reset_index()
     .drop(columns="index")
@@ -160,28 +161,28 @@ print("Saved invasive all source file.")
 
 # Make the link files
 
-ASFR_link = (
-    invasive_all.loc[invasive_all["speciesASFR"].notna(), ["usageKey", "speciesASFR"]]
+SINAS_link = (
+    invasive_all.loc[invasive_all["taxonSINAS"].notna(), ["usageKey", "taxonSINAS"]]
     .reset_index(drop=True)
     .drop_duplicates()
 )
 EPPO_link = (
     invasive_all.loc[
-        invasive_all["codeEPPO"].notna(), ["usageKey", "speciesEPPO", "codeEPPO"]
+        invasive_all["codeEPPO"].notna(), ["usageKey", "taxonEPPO", "codeEPPO"]
     ]
     .reset_index(drop=True)
     .drop_duplicates()
 )
 CABI_link = (
     invasive_all.loc[
-        invasive_all["codeCABI"].notna(), ["usageKey", "speciesCABI", "codeCABI"]
+        invasive_all["codeCABI"].notna(), ["usageKey", "taxonCABI", "codeCABI"]
     ]
     .reset_index(drop=True)
     .drop_duplicates()
 )
 DAISIE_link = (
     invasive_all.loc[
-        invasive_all["codeDAISIE"].notna(), ["usageKey", "speciesDAISIE", "codeDAISIE"]
+        invasive_all["codeDAISIE"].notna(), ["usageKey", "taxonDAISIE", "codeDAISIE"]
     ]
     .reset_index(drop=True)
     .drop_duplicates()
@@ -191,17 +192,17 @@ GBIF_backbone = invasive_all[["usageKey"]].drop_duplicates().reset_index(drop=Tr
 
 # Write to CSV
 
-ASFR_link.to_csv(data_dir + "link files/ASFR_link.csv", index=False)
+SINAS_link.to_csv(data_dir + "link files/SINAS_link.csv", index=False)
 EPPO_link.to_csv(data_dir + "link files/EPPO_link.csv", index=False)
 CABI_link.to_csv(data_dir + "link files/CABI_link.csv", index=False)
 DAISIE_link.to_csv(data_dir + "link files/DAISIE_link.csv", index=False)
 
-GBIF_backbone.to_csv(data_dir + "link files/GBIF_db_backbone.csv", index=False)
+GBIF_backbone.to_csv(data_dir + "link files/all_usageKeys.csv", index=False)
 
 print("Saved all link files.")
 
 # Replace the GBIF invasive taxonomy backbone file
-
+# Last updated: May 2024
 gbif_all = pd.read_csv(
     data_dir + "species lists/by_database/gbif_all_small.csv", sep="\t"
 )
