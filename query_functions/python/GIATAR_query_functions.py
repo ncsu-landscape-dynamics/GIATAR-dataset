@@ -38,14 +38,14 @@ import dotenv
 #### DATA PATH ####
 def create_dotenv(dp):
     # create .env file in current directory
-    # write data_path to .env file
+    # write DATA_PATH to .env file
     with open(".env", "w") as f:
-        f.write(f"data_path={dp}")
+        f.write(f"DATA_PATH={dp}")
 
 
-# if .env file exists, get data_path from .env file
+# if .env file exists, get DATA_PATH from .env file
 if os.path.exists(".env"):
-    data_path = dotenv.get_key(".env", "data_path")
+    data_path = dotenv.get_key(".env", "DATA_PATH")
     os.chdir(data_path)
 else:
     print("No .env file found. Please use `create_dotenv()` to create a .env file")
