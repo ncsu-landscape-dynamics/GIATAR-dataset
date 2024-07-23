@@ -20,9 +20,10 @@ import pycountry
 
 import spacy
 import regex as re
-
+import tqdm
 import os
 import dotenv
+from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 
 dotenv.load_dotenv(".env")
 
@@ -837,3 +838,228 @@ def match_countries(df):
     print("The following location names remain unmatched:")
     print(df.loc[df["ISO3"].str.len()>3].ISO3.unique())
     return df
+
+@retry(
+    stop=stop_after_attempt(5),
+    wait=wait_fixed(5),
+    retry=retry_if_exception_type((HTTPError, Timeout)),
+)
+def get_species_name_backbone(taxon, strict):
+    return species.name_backbone(taxon, verbose=True, strict=strict)
+
+
+def strip_author_name(taxon):
+    # Return the first two words of the species name string
+    return " ".join(taxon.split()[:2])
+
+
+
+
+def check_gbif_tax_secondary(dat):
+    # Initialize new columns
+    dat["scientificName"] = None
+    dat["Taxon"] = dat["Taxon_orig"]
+    dat["GBIFstatus"] = "Missing"
+    dat["GBIFmatchtype"] = None
+    dat["GBIFnote"] = None
+    dat["GBIFstatus_Synonym"] = None
+    dat["species"] = None
+    dat["genus"] = None
+    dat["family"] = None
+    dat["class"] = None
+    dat["order"] = None
+    dat["phylum"] = None
+    dat["kingdom"] = None
+    dat["GBIFtaxonRank"] = None
+    dat["GBIFusageKey"] = None
+    dat["note"] = None
+
+    # Determine taxlist based on columns available
+    if "kingdom_user" in dat.columns:
+        taxlist_lifeform = dat[["Taxon", "kingdom_user"]].drop_duplicates()
+        taxlist = taxlist_lifeform["Taxon"].unique()
+    elif "Author" in dat.columns:
+        taxlist = (
+            dat[["Taxon", "Author"]]
+            .drop_duplicates()
+            .apply(lambda x: " ".join(x), axis=1)
+            .unique()
+        )
+    else:
+        taxlist = dat["Taxon"].unique()
+
+    n_taxa = len(taxlist)
+
+    mismatches = pd.DataFrame(columns=["Taxon", "status", "matchType"])
+
+    # Initialize progress bar
+    tqdm.pandas()
+
+    for j in tqdm(range(n_taxa), desc="Processing taxa"):
+        taxon = taxlist[j]
+        ind_tax = dat.index[dat["Taxon_orig"] == taxon]
+        taxon = (
+            taxon.replace(" sp.", " ")
+            .replace(" spp.", " ")
+            .replace(" .f ", " ")
+            .replace(" .var", "")
+        )
+        try:
+            db_all = get_species_name_backbone(taxon, strict=True)
+        except (HTTPError, Timeout):
+            print(f"Failed to retrieve data for {taxon} after 5 attempts. Skipping.")
+            continue
+        db = {k: v for k, v in db_all.items() if k != "alternatives"}
+        alternatives = db_all.get("alternatives", [])
+        if (
+            db.get("status") == "ACCEPTED" and db.get("matchType") == "EXACT"
+        ):  # exact match
+            dat.loc[ind_tax, "Taxon"] = db.get("canonicalName")
+            dat.loc[ind_tax, "scientificName"] = db.get("scientificName")
+            dat.loc[ind_tax, "GBIFstatus"] = db.get("status")
+            dat.loc[ind_tax, "GBIFmatchtype"] = db.get("matchType")
+            dat.loc[ind_tax, "GBIFtaxonRank"] = db.get("rank")
+            dat.loc[ind_tax, "GBIFusageKey"] = db.get("usageKey")
+
+            dat.loc[ind_tax, "species"] = db.get("species")
+            dat.loc[ind_tax, "genus"] = db.get("genus")
+            dat.loc[ind_tax, "family"] = db.get("family")
+            dat.loc[ind_tax, "class"] = db.get("class")
+            dat.loc[ind_tax, "order"] = db.get("order")
+            dat.loc[ind_tax, "phylum"] = db.get("phylum")
+            dat.loc[ind_tax, "kingdom"] = db.get("kingdom")
+            dat.loc[ind_tax, "note"] = "Exact match"
+            continue
+
+        elif (
+            db.get("status") == "SYNONYM"
+            and db.get("matchType") == "EXACT"
+            and ("species" in db or "genus" in db)
+        ):
+            dat.loc[ind_tax, "GBIFstatus"] = db.get("status")
+            dat.loc[ind_tax, "GBIFmatchtype"] = db.get("matchType")
+            dat.loc[ind_tax, "GBIFtaxonRank"] = db.get("rank")
+            dat.loc[ind_tax, "GBIFusageKey"] = db.get("usageKey")
+
+            if any(
+                alt.get("status") == "ACCEPTED" and alt.get("matchType") == "EXACT"
+                for alt in alternatives
+            ):
+                accepted_alt = next(
+                    alt
+                    for alt in alternatives
+                    if alt.get("status") == "ACCEPTED"
+                    and alt.get("matchType") == "EXACT"
+                )
+                dat.loc[ind_tax, "scientificName"] = accepted_alt.get("scientificName")
+                dat.loc[ind_tax, "Taxon"] = accepted_alt.get("canonicalName")
+
+                dat.loc[ind_tax, "species"] = accepted_alt.get("species")
+                dat.loc[ind_tax, "genus"] = accepted_alt.get("genus")
+                dat.loc[ind_tax, "family"] = accepted_alt.get("family")
+                dat.loc[ind_tax, "class"] = accepted_alt.get("class")
+                dat.loc[ind_tax, "order"] = accepted_alt.get("order")
+                dat.loc[ind_tax, "phylum"] = accepted_alt.get("phylum")
+                dat.loc[ind_tax, "kingdom"] = accepted_alt.get("kingdom")
+                dat.loc[ind_tax, "GBIFstatus_Synonym"] = "ACCEPTED"
+                dat.loc[ind_tax, "usageKey"] = accepted_alt.get("usageKey")
+                dat.loc[ind_tax, "GBIFstatus"] = "ACCEPTED"
+                dat.loc[ind_tax, "note"] = "Synonym with accepted alt"
+                continue
+
+            elif db.get("rank") == "SPECIES":
+                dat.loc[ind_tax, "Taxon"] = db.get("species")
+                dat.loc[ind_tax, "GBIFstatus"] = db.get("status")
+                dat.loc[ind_tax, "GBIFmatchtype"] = db.get("matchType")
+                dat.loc[ind_tax, "GBIFtaxonRank"] = db.get("rank")
+                dat.loc[ind_tax, "GBIFusageKey"] = db.get("usageKey")
+                dat.loc[ind_tax, "note"] = "Synonym with no accepted alt, species rank"
+
+                try:
+                    db_all_2 = get_species_name_backbone(
+                        dat.loc[ind_tax, "Taxon"].iloc[0], strict=True
+                    )
+                except (HTTPError, Timeout):
+                    print(
+                        f"Failed to retrieve data for {dat.loc[ind_tax, 'Taxon'].iloc[0]} after 5 attempts. Skipping."
+                    )
+                    continue
+
+                db_2 = db_all_2
+
+                if db_2.get("matchType") == "EXACT":
+                    dat.loc[ind_tax, "scientificName"] = db_2.get("scientificName")
+                    dat.loc[ind_tax, "GBIFstatus_Synonym"] = db_2.get("status")
+                    dat.loc[ind_tax, "species"] = db_2.get("species")
+                    dat.loc[ind_tax, "genus"] = db_2.get("genus")
+                    dat.loc[ind_tax, "family"] = db_2.get("family")
+                    dat.loc[ind_tax, "class"] = db_2.get("class")
+                    dat.loc[ind_tax, "order"] = db_2.get("order")
+                    dat.loc[ind_tax, "phylum"] = db_2.get("phylum")
+                    dat.loc[ind_tax, "kingdom"] = db_2.get("kingdom")
+                    dat.loc[ind_tax, "note"] = (
+                        "Synonym with no accepted alt, species rank, exact match"
+                    )
+            elif db.get("rank") == "GENUS":
+                dat.loc[ind_tax, "Taxon"] = db.get("genus")
+                dat.loc[ind_tax, "GBIFstatus"] = db.get("status")
+                dat.loc[ind_tax, "GBIFmatchtype"] = db.get("matchType")
+                dat.loc[ind_tax, "GBIFtaxonRank"] = db.get("rank")
+                dat.loc[ind_tax, "GBIFusageKey"] = db.get("usageKey")
+                dat.loc[ind_tax, "note"] = "Synonym with no accepted alt, genus rank"
+                try:
+                    db_all_2 = get_species_name_backbone(
+                        dat.loc[ind_tax, "Taxon"].iloc[0], strict=True
+                    )
+                except (HTTPError, Timeout):
+                    print(
+                        f"Failed to retrieve data for {dat.loc[ind_tax, 'Taxon'].iloc[0]} after 5 attempts. Skipping."
+                    )
+                    continue
+        elif db.get("status") == "DOUBTFUL" and db.get("matchType") == "EXACT":
+            dat.loc[ind_tax, "GBIFstatus"] = db.get("status")
+            dat.loc[ind_tax, "GBIFmatchtype"] = db.get("matchType")
+            dat.loc[ind_tax, "GBIFtaxonRank"] = db.get("rank")
+            dat.loc[ind_tax, "GBIFusageKey"] = db.get("usageKey")
+            dat.loc[ind_tax, "note"] = "Doubtful record"
+
+            # Try again by stripping author name
+            try:
+                db_all_2 = get_species_name_backbone(
+                    strip_author_name(taxon), strict=True
+                )
+            except (HTTPError, Timeout):
+                print(
+                    f"Failed to retrieve data for {strip_author_name(taxon)} after 5 attempts. Skipping."
+                )
+                continue
+
+            db_2 = db_all_2
+
+            if db_2.get("matchType") == "EXACT":
+                dat.loc[ind_tax, "scientificName"] = db_2.get("scientificName")
+                dat.loc[ind_tax, "GBIFstatus_Synonym"] = db_2.get("status")
+                dat.loc[ind_tax, "species"] = db_2.get("species")
+                dat.loc[ind_tax, "genus"] = db_2.get("genus")
+                dat.loc[ind_tax, "family"] = db_2.get("family")
+                dat.loc[ind_tax, "class"] = db_2.get("class")
+                dat.loc[ind_tax, "order"] = db_2.get("order")
+                dat.loc[ind_tax, "phylum"] = db_2.get("phylum")
+                dat.loc[ind_tax, "kingdom"] = db_2.get("kingdom")
+                dat.loc[ind_tax, "note"] = (
+                    "Doubtful record, exact match after stripping author name"
+                )
+            continue
+        else:
+            dat.loc[ind_tax, "note"] = "No match found"
+            mismatch_entry = {
+                "Taxon": taxon,
+                "status": db.get("status"),
+                "matchType": db.get("matchType"),
+            }
+            mismatches = pd.concat(
+                [mismatches, pd.DataFrame([mismatch_entry])], ignore_index=True
+            )
+
+    return dat, mismatches
+
