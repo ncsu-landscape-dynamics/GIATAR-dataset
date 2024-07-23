@@ -21,7 +21,7 @@ data_dir = "/GITAR/Database/"
 
 # Auth token for EPPO API
 
-eppo_token = "f5e761b9bf9338e53a1bae94e699abb3"  # Anyone can register on EPPO (https://data.eppo.int/user/login) to get a token
+eppo_token = "INSERT_TOKEN"  # Anyone can register on EPPO (https://data.eppo.int/user/login) to get a token
 
 # Year to start collecting GBIF records
 
@@ -29,7 +29,7 @@ base_obs_year = 1970
 
 # Store information about last updates
 
-gbif_obs_last_update = "2023-11-01"
+gbif_obs_last_update = "2024-07-01"
 eppo_report_last_update = "2023-11-01"
 
 with open(".env", "w") as f:
