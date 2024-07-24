@@ -36,10 +36,12 @@ Unique ID Keys for species in the dataset are referred to as `usageKeys`, follow
 library(dplyr)
 library(tidyr)
 library(rgbif)
-source("GIATAR_query_functions.r")
+source("query_functions/R/GIATAR_query_functions.R")
 
 ## Set the path to data
+```
 
+```{r tutorial, include=FALSE}
 # Basic operations
 # Get all species
 get_all_species()
