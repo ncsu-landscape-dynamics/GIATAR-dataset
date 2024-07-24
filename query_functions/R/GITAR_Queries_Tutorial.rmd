@@ -32,18 +32,18 @@ Unique ID Keys for species in the database are referred to as `usageKeys`, follo
 ## Basic Operations
 
 ```{r setup, include=FALSE}
-```
-
-
-```{r setup, include=FALSE}
 # Load necessary libraries
 library(dplyr)
 library(tidyr)
 library(rgbif)
-source("GIATAR_query_functions.r")
+source("query_functions/R/GIATAR_query_functions.R")
 
 ## Set the path to data
 
+```
+
+
+```{r run-tutorial, include=FALSE}
 # Basic operations
 # Get all species
 get_all_species()
@@ -54,7 +54,7 @@ check_species_exists("Ailanthus altissima")
 get_usageKey("Ailanthus altissima")
 
 # Pull some introduction records
-get_first_introductions("Apis mellifera", import_additional_native_info = T)
+get_first_introductions("Apis mellifera", import_additional_native_info = TRUE)
 
 # Pull ecology information
 get_ecology("Thrips tabaci")
