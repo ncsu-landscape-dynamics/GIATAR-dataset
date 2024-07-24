@@ -839,6 +839,11 @@ def match_countries(df):
     print(df.loc[df["ISO3"].str.len()>3].ISO3.unique())
     return df
 
+### Taxonomic matching functions
+### Author: Thom Worm
+
+
+# Retry decorator to handle HTTP and timeout errors
 @retry(
     stop=stop_after_attempt(5),
     wait=wait_fixed(5),
@@ -851,8 +856,6 @@ def get_species_name_backbone(taxon, strict):
 def strip_author_name(taxon):
     # Return the first two words of the species name string
     return " ".join(taxon.split()[:2])
-
-
 
 
 def check_gbif_tax_secondary(dat):
@@ -1063,3 +1066,9 @@ def check_gbif_tax_secondary(dat):
 
     return dat, mismatches
 
+def update_GBIFstatus(row):
+    if row["GBIFstatus"] == "Missing" and row["GBIFstatus_Synonym"] != None:
+        row["GBIFstatus"] = row["GBIFstatus_Synonym"]
+    elif row["GBIFstatus"] == None and row["GBIFstatus_Synonym"] != None:
+        row["GBIFstatus"] = row["GBIFstatus_Synonym"]
+    return row
