@@ -118,7 +118,7 @@ print("Reading and cleaning DAISIE data...")
 
 # Already mostly in standard format: Read file and set column names
 # DAISIE first records dataset
-DAISIE_occur = pd.read_csv(data_dir + "DAISIE data/DAISIE_distribution.csv", dtype={"usageKey ": "str"})
+DAISIE_occur = pd.read_csv(data_dir + "DAISIE data/DAISIE_distribution.csv",)
 
 # Columns to keep from the DAISIE_occur data
 # code_region
@@ -182,22 +182,24 @@ print("Reading and cleaning SInAS data...")
 SINAS_occur = pd.read_csv(
     data_dir + "species lists/by_database/SInAS_AlienSpeciesDB_2.5.csv",
     sep=" ",
-    usecols=["taxonID", "Taxon", "Location", "eventDate", "references"],
+    usecols=["Taxon", "Location", "eventDate", "references"],
 )
 
+# SInAS link
+SINAS_link = pd.read_csv(data_dir + "link files/SINAS_link.csv", dtype={"usageKey": "str"})
+# Rename taxonSINAS to origTaxon
+SINAS_link.rename(columns={"taxonSINAS": "origTaxon"}, inplace=True)
+
 SINAS_occur.rename(
-    columns={"taxonID": "usageKey",
-             "Taxon": "origTaxon", 
+    columns={"Taxon": "origTaxon", 
              "Location": "location", 
-             "eventDate": "year", 
+             "eventDate": "year",
              "references": "Reference"},
     inplace=True,
 )
 
-# SInAS data already includes a usageKey
-SINAS_merged = SINAS_occur.loc[
-    SINAS_occur["usageKey"].notna()
-]
+# Merge SINAS_occur with SINAS_link
+SINAS_merged = pd.merge(left=SINAS_occur, right=SINAS_link, how="left", on="origTaxon")
 
 # Drop species column
 SINAS_merged.drop(columns=["origTaxon"], inplace=True)
@@ -478,6 +480,8 @@ all_records = pd.concat(
 all_records["year"] = all_records["year"].astype(float)
 all_records["usageKey"] = all_records["usageKey"].astype(str)
 all_records["usageKey"] = all_records["usageKey"].str.replace("\.0","", regex=True)
+# Exclude rows with NA in usageKey
+all_records = all_records.loc[all_records["usageKey"].notna()]
 
 # Write to csv
 
