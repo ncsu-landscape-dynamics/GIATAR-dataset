@@ -24,6 +24,8 @@ import tqdm
 import os
 import dotenv
 from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
+from pygbif import species
+from urllib.error import HTTPError, URLError, Timeout
 
 dotenv.load_dotenv(".env")
 
@@ -565,7 +567,9 @@ def call_gbif_api(call):
             try:
                 response = requests.get(call).json()
             except requests.exceptions.RequestException:
-                print("Something seems to be wrong with the server... let's take a break.")
+                print(
+                    "Something seems to be wrong with the server... let's take a break."
+                )
                 sleep(3600)
                 response = requests.get(call).json()
     response_vals = response["facets"][0]["counts"]
@@ -700,14 +704,15 @@ def CABI_sections_to_tables(CABI_tables, append=False):
 ### DAISIE functions
 
 daisie_year_map = {
-    '90`s ':"1990",
-    'Unknown': None,
-    'unknown': None, 
-    'since long': "700",
-    'Since long': "700",
-    '20. century':"1950",
-    '19th century':"1850"
+    "90`s ": "1990",
+    "Unknown": None,
+    "unknown": None,
+    "since long": "700",
+    "Since long": "700",
+    "20. century": "1950",
+    "19th century": "1850",
 }
+
 
 def clean_DAISIE_year(year):
     # DAISIE years contain a mix of values - some are single years, some are ranges
@@ -719,7 +724,7 @@ def clean_DAISIE_year(year):
             first_year = float(year)
         except:
             # Look for all 4 digit numbers in the string and take the lowest value
-            # If a year is a range, take the start year. If a year is a description, take the year from the description. 
+            # If a year is a range, take the start year. If a year is a description, take the year from the description.
             years = re.findall(r"[0-9]{4}", year)
             try:
                 first_year = min(years)
@@ -729,7 +734,7 @@ def clean_DAISIE_year(year):
                     first_year = daisie_year_map[year]
                 except:
                     first_year = None
-    else: 
+    else:
         first_year = None
     return first_year
 
@@ -752,8 +757,10 @@ def get_ISO3(loc):
                 except LookupError:
                     return "Not found"
             elif " (" in loc:
-                try: 
-                    return pycountry.countries.search_fuzzy(loc.split(" (")[0])[0].alpha_3
+                try:
+                    return pycountry.countries.search_fuzzy(loc.split(" (")[0])[
+                        0
+                    ].alpha_3
                 except LookupError:
                     return "Not found"
             else:
@@ -767,33 +774,34 @@ def get_ISO3(loc):
 # Countries not mapped correctly to ISO3 due to
 # naming conventions, sub-national locations
 missed_countries_dict = {
-    'Congo, Democratic Republic of the': "COD",
-    'Congo, Republic of the': "COG",
-    'Congo, Republic of': "COG",
-    'Virgin Islands, US': "VIR",
-    'Trinidad-Tobago': "TTO",
-    'Laos': "LAO",
-    'Macau': "MAC",
-    'Saint Paul (France)': "FRA",
-    'USACanada': ["USA", "CAN"],
+    "Congo, Democratic Republic of the": "COD",
+    "Congo, Republic of the": "COG",
+    "Congo, Republic of": "COG",
+    "Virgin Islands, US": "VIR",
+    "Trinidad-Tobago": "TTO",
+    "Laos": "LAO",
+    "Macau": "MAC",
+    "Saint Paul (France)": "FRA",
+    "USACanada": ["USA", "CAN"],
     "Czechoslovakia": "CZE",
     "England": "GBR",
     "Scotland": "GBR",
     "Bonaire, Saint Eustatius and Saba": "BES",
     "Bosnia-Herzegovina": "BIH",
-    'Gilbraltar': "GIB",
-    'Russian Far East': "RUS",
-    'European part of Russia': "RUS",
-    'Union of Soviet Socialist Republics': "RUS",
-    'Northwestern U.S.A.': 'USA',
-    'Southwestern U.S.A.': 'USA',
-    'Southeastern U.S.A.': 'USA',
-    'Northeastern U.S.A.': 'USA',
-    'South-Central U.S.A.': 'USA',
-    'North-Central U.S.A.': 'USA',
-    'Western Canada': 'CAN', 
-    'Eastern Canada': 'CAN'
+    "Gilbraltar": "GIB",
+    "Russian Far East": "RUS",
+    "European part of Russia": "RUS",
+    "Union of Soviet Socialist Republics": "RUS",
+    "Northwestern U.S.A.": "USA",
+    "Southwestern U.S.A.": "USA",
+    "Southeastern U.S.A.": "USA",
+    "Northeastern U.S.A.": "USA",
+    "South-Central U.S.A.": "USA",
+    "North-Central U.S.A.": "USA",
+    "Western Canada": "CAN",
+    "Eastern Canada": "CAN",
 }
+
 
 def clean_country_name(country):
     # For cleaning unmatched ISO3 codes
@@ -806,7 +814,9 @@ def clean_country_name(country):
             # Replace "Uk" as a word with "United Kingdom"
             country = re.sub("\\bUk\\b", " United Kingdom", country)
             # Split on ", " or " and " if "island" is not in country
-            if (", " in country) | (" and " in country) & ("island" not in country.lower()):
+            if (", " in country) | (" and " in country) & (
+                "island" not in country.lower()
+            ):
                 country_list = re.split(", | and ", country)
                 # Search for the ISO code for each country in the list
                 ISO3_list = [get_ISO3(country) for country in country_list]
@@ -816,12 +826,16 @@ def clean_country_name(country):
     else:
         return country
 
+
 # Wrapper function to match countries
+
 
 def match_countries(df):
     dicts = {}
     ISO3_codes = []
-    unique_countries = df.loc[(df["ISO3"].isna()) & (df["location"].notna())].location.unique()
+    unique_countries = df.loc[
+        (df["ISO3"].isna()) & (df["location"].notna())
+    ].location.unique()
     for country in unique_countries:
         ISO3_codes.append(get_ISO3(country))
     for i in range(len(unique_countries)):
@@ -836,8 +850,9 @@ def match_countries(df):
     # Explode any rows that may contain lists
     df = df.explode("ISO3")
     print("The following location names remain unmatched:")
-    print(df.loc[df["ISO3"].str.len()>3].ISO3.unique())
+    print(df.loc[df["ISO3"].str.len() > 3].ISO3.unique())
     return df
+
 
 ### Taxonomic matching functions
 ### Author: Thom Worm
@@ -1065,6 +1080,7 @@ def check_gbif_tax_secondary(dat):
             )
 
     return dat, mismatches
+
 
 def update_GBIFstatus(row):
     if row["GBIFstatus"] == "Missing" and row["GBIFstatus_Synonym"] != None:
