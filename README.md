@@ -28,4 +28,4 @@ All the scripts to obtain (via API, direct download, or webscraping) and consoli
 
 ### Paper and citation
 
-_In revision_
+Saffer, Ariel, Thom Worm, Yu Takeuchi, and Ross Meentemeyer. “GIATAR: A Spatio-Temporal Dataset of Global Invasive and Alien Species and Their Traits.” Scientific Data 11, no. 1 (September 11, 2024): 991. https://doi.org/10.1038/s41597-024-03824-w.
