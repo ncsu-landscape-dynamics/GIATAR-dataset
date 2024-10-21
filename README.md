@@ -1,6 +1,11 @@
 # GIATAR-dataset
 Global Invasive and Alien Traits and Records Dataset
 
+The dataset is available at: http://doi.org/10.5281/zenodo.13138446
+
+The dataset repository includes **all data files** and the code and tutorials needed to **query and use** the dataset.
+
+This repository provides the *additional code* to *construct or update* the dataset.
 
 ## About the dataset
 Monitoring and managing the global spread of invasive and alien species requires accurate spatiotemporal records of species presence and information about the biological characteristics of species of interest including life cycle information, biotic and abiotic constraints and pathways of spread. The Global Invasive and Alien Traits And Records (GIATAR) dataset provides consolidated dated records of invasive and alien presence at the country-scale combined with a suite of biological information about pests of interest in a standardized, machine-readable format. We provide dated presence records for 46,666 alien taxa in 249 countries constituting 827,300 country-taxon pairs, joined with additional biological information for thousands of taxa. GIATAR is designed to be quickly updateable with future data and easy to integrate into ongoing research on global patterns of alien species movement using scripts provided to query and analyze data. GIATAR provides crucial data needed for researchers and policymakers to compare global invasion trends across a wide range of taxa. 
