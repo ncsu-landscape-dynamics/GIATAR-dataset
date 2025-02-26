@@ -167,7 +167,15 @@ print("Exported DAISIE GBIF matches.")
 sinas_gbif = pd.concat([sinas_gbif, sinas_new], ignore_index=True)
 sinas_gbif.rename(columns={"origTaxon": "taxonSINAS"}, inplace=True)
 sinas_gbif[
-    ["taxonSINAS", "usageKey", "scientificName", "rank", "matchType", "Date", "New"]
+    [
+        "taxonSINAS",
+        "usageKey",
+        "scientificName",
+        "taxonRank",
+        "matchtype",
+        "Date",
+        "New",
+    ]
 ].to_csv(data_dir + "species lists/gbif_matched/sinas_gbif.csv", index=False)
 print("Exported SInAS GBIF matches.")
 
