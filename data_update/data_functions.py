@@ -25,7 +25,8 @@ import os
 import dotenv
 from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 from pygbif import species
-from urllib.error import HTTPError, URLError, Timeout
+from urllib.error import HTTPError
+from socket import timeout as Timeout
 
 dotenv.load_dotenv(".env")
 
@@ -317,7 +318,15 @@ def scrape_monthly_eppo_report(year, month):
 
 
 def get_species(title):
-    if "First report of" in title:
+    if "First report of establishment of" in title:
+        return (
+            re.search(r"First report of establishment of (.*?) (in|from)", title)
+            .group(1)
+            .replace("’", "'")
+            .replace("‘", "'")
+            .lower()
+        )
+    elif "First report of" in title:
         return (
             re.search(r"First report of (.*?) (in|from)", title)
             .group(1)
@@ -521,7 +530,7 @@ def call_gbifmatch_api(call):
 
 
 def gbif_species_match(df):
-    df["api_call"] = df.species.apply(write_gbif_match)
+    df["api_call"] = df.origTaxon.apply(write_gbif_match)
 
     responses = []
     for call in df.api_call:
