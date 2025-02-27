@@ -320,7 +320,15 @@ def scrape_monthly_eppo_report(year, month):
 
 
 def get_species(title):
-    if "First report of" in title:
+    if "First report of establishment of" in title:
+        return (
+            re.search(r"First report of establishment of (.*?) (in|from)", title)
+            .group(1)
+            .replace("’", "'")
+            .replace("‘", "'")
+            .lower()
+        )
+    elif "First report of" in title:
         return (
             re.search(r"First report of (.*?) (in|from)", title)
             .group(1)
@@ -524,7 +532,7 @@ def call_gbifmatch_api(call):
 
 
 def gbif_species_match(df):
-    df["api_call"] = df.species.apply(write_gbif_match)
+    df["api_call"] = df.origTaxon.apply(write_gbif_match)
 
     responses = []
     for call in df.api_call:
@@ -1116,7 +1124,9 @@ def check_gbif_tax_secondary(dat):
                     )
                     continue
                 if accepted_db.get("taxonomicStatus") == "ACCEPTED":
-                    dat.loc[ind_tax, "scientificName"] = accepted_db.get("scientificName")
+                    dat.loc[ind_tax, "scientificName"] = accepted_db.get(
+                        "scientificName"
+                    )
                     dat.loc[ind_tax, "Taxon"] = accepted_db.get("canonicalName")
                     dat.loc[ind_tax, "GBIFstatus"] = accepted_db.get("taxonomicStatus")
                     dat.loc[ind_tax, "GBIFmatchtype"] = db_2.get("matchType")
@@ -1130,7 +1140,9 @@ def check_gbif_tax_secondary(dat):
                     dat.loc[ind_tax, "order"] = accepted_db.get("order")
                     dat.loc[ind_tax, "phylum"] = accepted_db.get("phylum")
                     dat.loc[ind_tax, "kingdom"] = accepted_db.get("kingdom")
-                    dat.loc[ind_tax, "note"] = "Synonym with accepted alt after splitting binomial name"
+                    dat.loc[ind_tax, "note"] = (
+                        "Synonym with accepted alt after splitting binomial name"
+                    )
         else:
             dat.loc[ind_tax, "note"] = "No match found"
             mismatch_entry = {
