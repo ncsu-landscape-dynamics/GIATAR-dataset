@@ -25,7 +25,10 @@ import os
 import dotenv
 from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 from pygbif import species
-from urllib.error import HTTPError, URLError, Timeout
+from urllib.error import HTTPError, URLError
+from urllib3 import Timeout
+from tqdm._tqdm_notebook import tqdm_notebook
+
 
 dotenv.load_dotenv(".env")
 
@@ -911,9 +914,9 @@ def check_gbif_tax_secondary(dat):
     mismatches = pd.DataFrame(columns=["Taxon", "status", "matchType"])
 
     # Initialize progress bar
-    tqdm.pandas()
+    # tqdm_notebook.pandas()
 
-    for j in tqdm(range(n_taxa), desc="Processing taxa"):
+    for j in range(n_taxa):
         taxon = taxlist[j]
         ind_tax = dat.index[dat["Taxon_orig"] == taxon]
         taxon = (
@@ -929,6 +932,7 @@ def check_gbif_tax_secondary(dat):
             continue
         db = {k: v for k, v in db_all.items() if k != "alternatives"}
         alternatives = db_all.get("alternatives", [])
+        print(alternatives)
         if (
             db.get("status") == "ACCEPTED" and db.get("matchType") == "EXACT"
         ):  # exact match
@@ -1068,6 +1072,65 @@ def check_gbif_tax_secondary(dat):
                     "Doubtful record, exact match after stripping author name"
                 )
             continue
+        elif (
+            len(taxon.split()) > 2
+        ):  # when we refactor, the code below should get replaced with a recursive call to the functio96
+            taxon_binom = " ".join(taxon.split()[:2])
+            print(taxon_binom)
+            try:
+                db_binom = get_species_name_backbone(taxon_binom, strict=True)
+            except (HTTPError, Timeout):
+                print(
+                    f"Failed to retrieve data for {taxon_binom} after 5 attempts. Skipping."
+                )
+                continue
+
+            db_2 = db_binom
+
+            if db_2.get("matchType") == "EXACT" and db_2.get("status") == "ACCEPTED":
+                dat.loc[ind_tax, "scientificName"] = db_2.get("scientificName")
+                dat.loc[ind_tax, "Taxon"] = db_2.get("canonicalName")
+                dat.loc[ind_tax, "GBIFstatus"] = db_2.get("status")
+                dat.loc[ind_tax, "GBIFmatchtype"] = db_2.get("matchType")
+                dat.loc[ind_tax, "GBIFtaxonRank"] = db_2.get("rank")
+                dat.loc[ind_tax, "GBIFusageKey"] = db_2.get("usageKey")
+
+                dat.loc[ind_tax, "species"] = db_2.get("species")
+                dat.loc[ind_tax, "genus"] = db_2.get("genus")
+                dat.loc[ind_tax, "family"] = db_2.get("family")
+                dat.loc[ind_tax, "class"] = db_2.get("class")
+                dat.loc[ind_tax, "order"] = db_2.get("order")
+                dat.loc[ind_tax, "phylum"] = db_2.get("phylum")
+                dat.loc[ind_tax, "kingdom"] = db_2.get("kingdom")
+                dat.loc[ind_tax, "note"] = "Exact match after splitting binomial name"
+            elif (
+                db_2.get("status") == "SYNONYM"
+                and db_2.get("matchType") == "EXACT"
+                and ("species" in db_2 or "genus" in db_2)
+            ):
+                try:
+                    accepted_db = species.name_usage(key=db_2.get("acceptedUsageKey"))
+                except (HTTPError, Timeout):
+                    print(
+                        f"Failed to retrieve data for {db_2.get('acceptedUsageKey')} after 5 attempts. Skipping."
+                    )
+                    continue
+                if accepted_db.get("taxonomicStatus") == "ACCEPTED":
+                    dat.loc[ind_tax, "scientificName"] = accepted_db.get("scientificName")
+                    dat.loc[ind_tax, "Taxon"] = accepted_db.get("canonicalName")
+                    dat.loc[ind_tax, "GBIFstatus"] = accepted_db.get("taxonomicStatus")
+                    dat.loc[ind_tax, "GBIFmatchtype"] = db_2.get("matchType")
+                    dat.loc[ind_tax, "GBIFtaxonRank"] = db_2.get("rank")
+                    dat.loc[ind_tax, "GBIFusageKey"] = db_2.get("usageKey")
+
+                    dat.loc[ind_tax, "species"] = accepted_db.get("species")
+                    dat.loc[ind_tax, "genus"] = accepted_db.get("genus")
+                    dat.loc[ind_tax, "family"] = accepted_db.get("family")
+                    dat.loc[ind_tax, "class"] = accepted_db.get("class")
+                    dat.loc[ind_tax, "order"] = accepted_db.get("order")
+                    dat.loc[ind_tax, "phylum"] = accepted_db.get("phylum")
+                    dat.loc[ind_tax, "kingdom"] = accepted_db.get("kingdom")
+                    dat.loc[ind_tax, "note"] = "Synonym with accepted alt after splitting binomial name"
         else:
             dat.loc[ind_tax, "note"] = "No match found"
             mismatch_entry = {
