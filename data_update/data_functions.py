@@ -887,7 +887,7 @@ def strip_author_name(taxon):
 def check_gbif_tax_secondary(dat):
     # Initialize new columns
     dat["scientificName"] = None
-    dat["Taxon"] = dat["Taxon_orig"]
+    dat["Taxon"] = dat["origTaxon"]
     dat["GBIFstatus"] = "Missing"
     dat["GBIFmatchtype"] = None
     dat["GBIFnote"] = None
@@ -926,7 +926,7 @@ def check_gbif_tax_secondary(dat):
 
     for j in range(n_taxa):
         taxon = taxlist[j]
-        ind_tax = dat.index[dat["Taxon_orig"] == taxon]
+        ind_tax = dat.index[dat["origTaxon"] == taxon]
         taxon = (
             taxon.replace(" sp.", " ")
             .replace(" spp.", " ")

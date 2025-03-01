@@ -69,7 +69,10 @@ sinas_species.rename(
     columns={colname: colname.replace("GBIF", "") for colname in sinas_species.columns},
     inplace=True,
 )
-sinas_species.rename(columns={"Taxon": "origTaxon"}, inplace=True)
+sinas_species.rename(
+    columns={"Taxon": "origTaxon", "matchtype": "matchType", "taxonID": "codeSINAS"},
+    inplace=True,
+)
 
 # If we haven't matched them in GBIF previously, check for matches
 
@@ -81,7 +84,7 @@ try:
         dtype={"usageKey": "str"},
     )
 except FileNotFoundError:
-    sinas_gbif = pd.DataFrame(columns=["origTaxon", "usageKey", "New", "Date"])
+    sinas_gbif = pd.DataFrame(columns=["codeSINAS", "usageKey", "New", "Date"])
 
 try:
     cabi_gbif = pd.read_csv(
@@ -129,7 +132,7 @@ daisie_match = daisie_gbif.loc[
 # in case GBIF is able to match species that were previously missed
 
 sinas_new = sinas_species.loc[
-    ~sinas_species["origTaxon"].isin(sinas_match["taxonSINAS"])
+    ~sinas_species["codeSINAS"].isin(sinas_match["codeSINAS"])
 ]
 cabi_new = cabi_species.loc[~cabi_species["codeCABI"].isin(cabi_match["codeCABI"])]
 eppo_new = eppo_species.loc[~eppo_species["codeEPPO"].isin(eppo_match["codeEPPO"])]
@@ -165,14 +168,14 @@ print("Exported DAISIE GBIF matches.")
 
 # SInAS has already been matched
 sinas_gbif = pd.concat([sinas_gbif, sinas_new], ignore_index=True)
-sinas_gbif.rename(columns={"origTaxon": "taxonSINAS"}, inplace=True)
 sinas_gbif[
     [
-        "taxonSINAS",
+        "codeSINAS",
+        "origTaxon",
         "usageKey",
         "scientificName",
         "taxonRank",
-        "matchtype",
+        "matchType",
         "Date",
         "New",
     ]
