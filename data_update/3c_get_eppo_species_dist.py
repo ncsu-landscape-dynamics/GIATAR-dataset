@@ -29,13 +29,19 @@ today = date.today()
 # Bring in EPPO invasive records
 
 eppo_link = pd.read_csv(data_dir + "link files/EPPO_link.csv", dtype={"usageKey": str})
-eppo_new = pd.read_csv(data_dir + "species lists/new/eppo_new.csv", dtype={"usageKey": str})
-eppo_invasive_new = eppo_link.loc[eppo_link.usageKey.isin(eppo_new.usageKey)].reset_index(drop=True)
+eppo_new = pd.read_csv(
+    data_dir + "species lists/new/eppo_new.csv", dtype={"usageKey": str}
+)
+eppo_invasive_new = eppo_link.loc[
+    eppo_link.usageKey.isin(eppo_new.usageKey)
+].reset_index(drop=True)
 codes = eppo_invasive_new["codeEPPO"].unique()
 
 # Read in previous data
 try:
-    prev_section_table = pd.read_csv(f"{data_dir}/EPPO data/EPPO_distribution.csv", dtype={"usageKey": str})
+    prev_section_table = pd.read_csv(
+        f"{data_dir}/EPPO data/EPPO_distribution.csv", dtype={"usageKey": str}
+    )
     print("Imported EPPO distribution data.")
 except FileNotFoundError:
     print("No previous EPPO distribution data found.")
@@ -58,9 +64,7 @@ for i, code in enumerate(codes):
     if table is np.nan:
         continue
 
-    table["usageKey"] = eppo_link.loc[
-        eppo_link["codeEPPO"] == code
-    ].usageKey.values[0]
+    table["usageKey"] = eppo_link.loc[eppo_link["codeEPPO"] == code].usageKey.values[0]
 
     read_tables.append(table)
 
@@ -75,24 +79,47 @@ section_table = section_table.reset_index(drop=True)
 
 # Map ISO2 to ISO3
 
-countries = pd.read_csv(data_dir + "country files/country_codes.csv", usecols=["ISO2", "ISO3"])
+countries = pd.read_csv(
+    data_dir + "country files/country_codes.csv", usecols=["ISO2", "ISO3"]
+)
 
 section_table = pd.merge(
-        left=section_table,
-        right=countries,
-        how="left",
-        left_on="ISO2",
-        right_on="ISO2",
-    )
+    left=section_table,
+    right=countries,
+    how="left",
+    left_on="ISO2",
+    right_on="ISO2",
+)
 
 # Add today's date
 
 section_table["Date"] = f"{today.year}-{today.month:02d}-{today.day:02d}"
 
 # Append to previous table
-combined_table = pd.concat([prev_section_table, section_table]).drop_duplicates(
-    subset=section_table.columns.difference(["Date"])
-    ).reset_index(drop=True).reset_index(drop=True)
+combined_table = (
+    pd.concat([prev_section_table, section_table])
+    .drop_duplicates(subset=section_table.columns.difference(["Date"]))
+    .reset_index(drop=True)
+    .reset_index(drop=True)
+)
+
+# Clean the References
+# Replace "\n*" in the Reference column with "; "
+combined_table["Reference"] = combined_table["Reference"].str.replace(
+    "\n*", "; ", regex=False
+)
+# Replace "\n" with a space
+combined_table["Reference"] = combined_table["Reference"].str.replace(
+    "\n", " ", regex=False
+)
+# Replace "\r" with a space
+combined_table["Reference"] = combined_table["Reference"].str.replace(
+    "\r", " ", regex=False
+)
+# Replace any remaining \ with a /
+combined_table["Reference"] = combined_table["Reference"].str.replace(
+    "\\", "/", regex=False
+)
 
 # Export to csv
 combined_table.to_csv(f"{data_dir}/EPPO data/EPPO_distribution.csv", index=False)
