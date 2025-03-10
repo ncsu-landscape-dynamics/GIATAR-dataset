@@ -100,7 +100,7 @@ gbif_records = (
         axis=0,
     )
     .reset_index()
-    .drop(columns=["index"])
+    .drop(columns=["index", "taxonEPPO", "taxonDAISIE", "taxonCABI"])
 )
 gbif_records = gbif_records.drop_duplicates("usageKey").sort_index()
 
@@ -109,7 +109,7 @@ gbif_records = gbif_records.drop_duplicates("usageKey").sort_index()
 
 combined_records = pd.merge(
     left=cabi_match.loc[:, ["taxonCABI", "codeCABI", "usageKey", "invasiveCABI"]],
-    right=sinas_match.loc[:, "taxonSINAS":"usageKey"],
+    right=sinas_match.loc[:, ["taxonSINAS", "codeSINAS", "usageKey"]],
     how="outer",
     on="usageKey",
 )
@@ -144,10 +144,10 @@ invasive_all = (
         (combined_records["invasiveEPPO"] == True)
         | (combined_records["invasiveCABI"] == "True")
         | (combined_records["taxonSINAS"].notna())
-        | (combined_records["taxonDAISIE"].notna())
+        | (combined_records["codeDAISIE"].notna())
     ]
     .reset_index()
-    .drop(columns="index")
+    .drop(columns=["index"])
 )
 
 # Drop duplicated rows
@@ -162,7 +162,9 @@ print("Saved invasive all source file.")
 # Make the link files
 
 SINAS_link = (
-    invasive_all.loc[invasive_all["taxonSINAS"].notna(), ["usageKey", "taxonSINAS"]]
+    invasive_all.loc[
+        invasive_all["taxonSINAS"].notna(), ["usageKey", "taxonSINAS", "codeSINAS"]
+    ]
     .reset_index(drop=True)
     .drop_duplicates()
 )
