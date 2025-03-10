@@ -75,7 +75,6 @@ sinas_species.rename(
 )
 
 # If we haven't matched them in GBIF previously, check for matches
-
 # Read in the previous GBIF matches
 
 try:
@@ -84,6 +83,7 @@ try:
         dtype={"usageKey": "str"},
     )
 except FileNotFoundError:
+    print("sinas_gbif.csv not found, creating a new DataFrame.")
     sinas_gbif = pd.DataFrame(columns=["codeSINAS", "usageKey", "New", "Date"])
 
 try:
@@ -91,6 +91,7 @@ try:
         data_dir + "species lists/gbif_matched/cabi_gbif.csv", dtype={"usageKey": "str"}
     )
 except FileNotFoundError:
+    print("cabi_gbif.csv not found, creating a new DataFrame.")
     cabi_gbif = pd.DataFrame(columns=["codeCABI", "usageKey", "New", "Date"])
 
 try:
@@ -98,6 +99,7 @@ try:
         data_dir + "species lists/gbif_matched/eppo_gbif.csv", dtype={"usageKey": "str"}
     )
 except FileNotFoundError:
+    print("eppo_gbif.csv not found, creating a new DataFrame.")
     eppo_gbif = pd.DataFrame(columns=["codeEPPO", "usageKey", "New", "Date"])
 
 try:
@@ -106,6 +108,7 @@ try:
         dtype={"usageKey": "str"},
     )
 except FileNotFoundError:
+    print("daisie_gbif.csv not found, creating a new DataFrame.")
     daisie_gbif = pd.DataFrame(columns=["codeDAISIE", "usageKey", "New", "Date"])
 
 sinas_gbif["New"] = False
@@ -147,6 +150,9 @@ gbif_species_match(cabi_new)
 cabi_new["Date"] = f"{today.year}-{today.month:02d}-{today.day:02d}"
 cabi_new["New"] = True
 cabi_gbif = pd.concat([cabi_gbif, cabi_new], ignore_index=True)
+cabi_gbif["usageKey"] = (
+    cabi_gbif["usageKey"].astype("str").str.replace(".0", "", regex=False)
+)
 cabi_gbif.to_csv(data_dir + "species lists/gbif_matched/cabi_gbif.csv", index=False)
 print("Exported CABI GBIF matches.")
 
@@ -155,6 +161,9 @@ gbif_species_match(eppo_new)
 eppo_new["Date"] = f"{today.year}-{today.month:02d}-{today.day:02d}"
 eppo_new["New"] = True
 eppo_gbif = pd.concat([eppo_gbif, eppo_new], ignore_index=True)
+eppo_gbif["usageKey"] = (
+    eppo_gbif["usageKey"].astype("str").str.replace(".0", "", regex=False)
+)
 eppo_gbif.to_csv(data_dir + "species lists/gbif_matched/eppo_gbif.csv", index=False)
 print("Exported EPPO GBIF matches.")
 
@@ -163,11 +172,17 @@ gbif_species_match(daisie_new)
 daisie_new["Date"] = f"{today.year}-{today.month:02d}-{today.day:02d}"
 daisie_new["New"] = True
 daisie_gbif = pd.concat([daisie_gbif, daisie_new], ignore_index=True)
+daisie_gbif["usageKey"] = (
+    daisie_gbif["usageKey"].astype("str").str.replace(".0", "", regex=False)
+)
 daisie_gbif.to_csv(data_dir + "species lists/gbif_matched/daisie_gbif.csv", index=False)
 print("Exported DAISIE GBIF matches.")
 
 # SInAS has already been matched
 sinas_gbif = pd.concat([sinas_gbif, sinas_new], ignore_index=True)
+sinas_gbif["usageKey"] = (
+    sinas_gbif["usageKey"].astype("str").str.replace(".0", "", regex=False)
+)
 sinas_gbif[
     [
         "codeSINAS",

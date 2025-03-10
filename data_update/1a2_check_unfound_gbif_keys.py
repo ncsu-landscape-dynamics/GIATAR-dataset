@@ -2,8 +2,8 @@
 File: data_update/1a2_check_unfound_gbif_keys.py
 Author: Thom Worm
 Date created: 2024-06-01
-Description: This script checks for species that were not found in the GBIF backbone and 
-attempts to match them to the GBIF backbone using the pygbif package. It then updates the 
+Description: This script checks for species that were not found in the GBIF backbone and
+attempts to match them to the GBIF backbone using the pygbif package. It then updates the
 species lists with the new GBIF keys and taxonomic information.
 """
 
@@ -82,10 +82,11 @@ for file in data_files:
         file["taxonomic_species"] = None
     if "canonicalName" not in file.columns:
         file["canonicalName"] = None
-    # if usageKey col is not string, set to string and remove any .0 from floats
+    # if usageKey col is not string, set to string
     if file["usageKey"].dtype != "str":
         file["usageKey"] = file["usageKey"].astype(str)
-        file["usageKey"] = file["usageKey"].str.replace(".0", "")
+    # remove any .0 caused by floats
+    file["usageKey"] = file["usageKey"].str.replace(".0", "", regex=False)
 
     for index, row in file.iterrows():
 
@@ -209,6 +210,16 @@ sinas_gbif_match = data_files[0]
 cabi_gbif_match = data_files[1]
 eppo_gbif_match = data_files[2]
 daisie_gbif_match = data_files[3]
+
+# Last cleaning:
+# Drop the column "Unnamed: 0" if it exists
+# Ensure that all usageKeys are strings and remove ".0" from former floats
+
+for df in [cabi_gbif_match, eppo_gbif_match, sinas_gbif_match, daisie_gbif_match]:
+    if "Unnamed: 0" in df.columns:
+        df.drop(columns=["Unnamed: 0"], inplace=True)
+    df["usageKey"] = df["usageKey"].astype(str)
+    df["usageKey"] = df["usageKey"].str.replace(".0", "", regex=False)
 
 # write to csv
 cabi_gbif_match.to_csv(
