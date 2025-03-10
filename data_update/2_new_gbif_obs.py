@@ -28,18 +28,32 @@ today = date.today()
 
 # Start with master list
 
-species_list = pd.read_csv(data_dir + "species lists/invasive_all_source.csv", dtype={"usageKey":str})
+species_list = pd.read_csv(
+    data_dir + "link_files/all_usageKeys.csv", dtype={"usageKey": str}
+)
 
-# Get keys that belong to new species (need full history)
-new_keys = pd.read_csv(data_dir + "species lists/new/new_usageKeys.csv", dtype={"usageKey":str})
+# Get keys that belong to new species
+try:
+    new_keys = pd.read_csv(
+        data_dir + "species lists/new/new_usageKeys.csv", dtype={"usageKey": str}
+    )
+except FileNotFoundError:
+    print(
+        "File not found: species lists/new/new_usageKeys.csv. Creating a blank dataframe..."
+    )
+    new_keys = pd.DataFrame(columns=["usageKey"])
 
 # Only keep usageKeys that don't start with X
-new_keys = new_keys[~new_keys['usageKey'].str.startswith('X')]
-species_list = species_list[~species_list['usageKey'].str.startswith('X')]
+new_keys = new_keys[~new_keys["usageKey"].str.startswith("X")]
+species_list = species_list[~species_list["usageKey"].str.startswith("X")]
 
 # Get list of species that are new
-new_invasive_species = species_list.loc[species_list['usageKey'].isin(new_keys['usageKey']), "usageKey"].unique()
-prev_species = species_list.loc[~species_list['usageKey'].isin(new_keys['usageKey']), "usageKey"].unique()
+new_invasive_species = species_list.loc[
+    species_list["usageKey"].isin(new_keys["usageKey"]), "usageKey"
+].unique()
+prev_species = species_list.loc[
+    ~species_list["usageKey"].isin(new_keys["usageKey"]), "usageKey"
+].unique()
 
 # Convert all usageKeys to integers
 new_invasive_species = [int(float(x)) for x in new_invasive_species]
@@ -51,12 +65,14 @@ prev_species = [int(float(x)) for x in prev_species]
 current_year = date.today().year
 try:
     last_update_year = int(last_update[0:4])
-except: 
+except:
     # Default year to start if there is no prior data
     last_update_year = base_year
 
-print(f"Getting data from year {last_update_year} to present ({current_year})"
-      f" for {len(prev_species)} already-included species.")
+print(
+    f"Getting data from year {last_update_year} to present ({current_year})"
+    f" for {len(prev_species)} already-included species."
+)
 
 if current_year == last_update_year:
     years = [current_year]
@@ -69,8 +85,10 @@ else:
 species_year = [prev_species, years]
 species_years = list(itertools.product(*species_year))
 
-print(f"Getting data from year {base_year} to present ({current_year})"
-      f" for {len(new_invasive_species)} new species.")
+print(
+    f"Getting data from year {base_year} to present ({current_year})"
+    f" for {len(new_invasive_species)} new species."
+)
 
 years = list(range(base_year, current_year + 1))
 species_year = [new_invasive_species, years]
@@ -87,14 +105,12 @@ print(f"Prepared {len(api_calls_df.api_call)} API calls...")
 
 results = []
 
-for (
-    i, call
-) in enumerate(api_calls_df.api_call):
+for i, call in enumerate(api_calls_df.api_call):
     try:
         result = call_gbif_api(call)
     except:
         print(f"Failed on API call {i}!")
-        result = "Failed" # Placeholder for failed API calls 
+        result = "Failed"  # Placeholder for failed API calls
     results.append(result)
     if i % 100 == 0:
         print(f"{i} out of {len(api_calls_df.api_call)} API calls done!")
@@ -156,7 +172,9 @@ first_records.to_csv(data_dir + "GBIF data/new_GBIF_first_records.csv", index=Fa
 
 # Consolidate with and replace previous first records
 
-previous_first_records = pd.read_csv(data_dir + "GBIF data/GBIF_first_records.csv", dtype={"usageKey":str})
+previous_first_records = pd.read_csv(
+    data_dir + "GBIF data/GBIF_first_records.csv", dtype={"usageKey": str}
+)
 
 first_records = (
     pd.concat([previous_first_records, first_records])
@@ -191,5 +209,5 @@ new_keys.to_csv(data_dir + "species lists/new/new_usageKeys.csv", index=False)
 
 # Update the date in the .env file
 
-os.environ["GBIF_OBS_UPDATED"]=f"{today.year}-{today.month:02d}-{today.day:02d}"
-dotenv.set_key('.env', "GBIF_OBS_UPDATED", os.environ["GBIF_OBS_UPDATED"])
+os.environ["GBIF_OBS_UPDATED"] = f"{today.year}-{today.month:02d}-{today.day:02d}"
+dotenv.set_key(".env", "GBIF_OBS_UPDATED", os.environ["GBIF_OBS_UPDATED"])
