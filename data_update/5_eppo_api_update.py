@@ -1,4 +1,3 @@
-
 """
 File: data_update/5_eppo_api_update.py
 Author: Ariel Saffer
@@ -29,7 +28,9 @@ data_dir = os.getenv("DATA_PATH")
 token = os.getenv("EPPO_TOKEN")
 
 # Test the EPPO token
-if eppo_cat_api("BEMITA", token) == {'message': 'You do not have sufficent rights to perform this operation'}:
+if eppo_cat_api("BEMITA", token) == {
+    "message": "You do not have sufficent rights to perform this operation"
+}:
     print("Invalid EPPO token. Please update your .env file!")
     sys.exit()
 
@@ -46,14 +47,15 @@ queries = [
     names,
 ]
 
-# Read in the list of EPPO invasive species
-# eppo_species = pd.read_csv(data_dir + "link files/EPPO_link.csv")
-
 # Bring in EPPO invasive records
 
-eppo_link = pd.read_csv(data_dir + "link files/EPPO_link.csv")
-eppo_new = pd.read_csv(data_dir + "species lists/new/eppo_new.csv")
-eppo_species = eppo_link.loc[eppo_link.usageKey.isin(eppo_new.usageKey)].reset_index(drop=True)
+eppo_link = pd.read_csv(data_dir + "link files/EPPO_link.csv", dtype={"usageKey": str})
+eppo_new = pd.read_csv(
+    data_dir + "species lists/new/eppo_new.csv", dtype={"usageKey": str}
+)
+eppo_species = eppo_link.loc[eppo_link.usageKey.isin(eppo_new.usageKey)].reset_index(
+    drop=True
+)
 
 queries = [
     categorization,

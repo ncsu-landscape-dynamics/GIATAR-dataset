@@ -188,7 +188,10 @@ def eppo_query_wrapper(eppo_species, query, token, append=False):
 
         if append == True:
             try:
-                prev_table = pd.read_csv(f"{data_dir}/EPPO data/EPPO_{query[1:]}.csv")
+                prev_table = pd.read_csv(
+                    f"{data_dir}/EPPO data/EPPO_{query[1:]}.csv",
+                    dtype={"usageKey": str},
+                )
                 section_table = pd.concat(
                     [prev_table, section_table], ignore_index=True
                 ).drop_duplicates(subset=section_table.columns.difference(["Date"]))
