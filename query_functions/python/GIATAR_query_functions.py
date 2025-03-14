@@ -1,6 +1,6 @@
 """
 File: query_functions/GIATAR_query_functions.py
-Author: Thom Worm
+Author: Thom Worm and Ariel Saffer
 Date created: 2023-04-14
 Description: Functions to facilitate querying the GIATAR database
 """
@@ -12,6 +12,9 @@ import os
 import warnings
 import pygbif
 import dotenv
+import requests
+import zipfile
+import io
 
 
 # get_species_name(usageKey) - returns species name as string - takes usageKey as string or int
@@ -37,6 +40,15 @@ import dotenv
 
 #### DATA PATH ####
 def create_dotenv(dp):
+    """
+    Creates a .env file in the current directory and writes the provided data path to it.
+
+    Args:
+        dp (str): The data path to be written to the .env file.
+
+    Returns:
+        None
+    """
     # create .env file in current directory
     # write DATA_PATH to .env file
     with open(".env", "w") as f:
@@ -69,6 +81,18 @@ if "first_records" not in globals():
 
 
 def get_species_name(usageKey):
+    """
+    Retrieve the species name corresponding to a given usage key.
+    Args:
+        usageKey (int or str): The usage key for which to retrieve the species name.
+                               If the usage key is not a string, it will be converted
+                               to a string and any ".0" will be removed.
+    Returns:
+        str: The canonical name of the species corresponding to the given usage key,
+             if found in the invasive_all_source DataFrame.
+    Raises:
+        KeyError: If the usage key is not found in the invasive_all_source DataFrame.
+    """
     # if usagekey is not a string, convert to string and remove ".0"
     if not isinstance(usageKey, str):
         usageKey = str(usageKey).replace(".0", "")
@@ -80,6 +104,27 @@ def get_species_name(usageKey):
 
 
 def get_usageKey(species_name):
+    """
+    Retrieve the usage key for a given species name from various sources.
+    This function checks multiple columns in the `invasive_all_source` DataFrame
+    to find the usage key associated with the provided species name. If the species
+    name is not found in the DataFrame, it attempts to retrieve the usage key from
+    the GBIF database using the pygbif library.
+    Parameters:
+    species_name (str): The name of the species for which to retrieve the usage key.
+    Returns:
+    str: The usage key associated with the species name if found, otherwise None.
+    Notes:
+    - The function first checks if the `invasive_all_source` DataFrame is loaded,
+      and if not, it loads the DataFrame from a CSV file.
+    - The function checks the following columns in order: "canonicalName", "taxonSINAS",
+      "taxonEPPO", "taxonCABI", "usageKey", "speciesGBIF", "taxonDAISIE".
+    - If the species name is a digit or starts with "xx" or "XX", it is returned as is.
+    - If the species name is not found in the DataFrame, the function attempts to
+      retrieve the usage key from the GBIF database using the pygbif library.
+    - If the species name is not found in both the DataFrame and the GBIF database,
+      the function prints an error message and returns None.
+    """
     if "invasive_all_source" not in globals():
         global invasive_all_source
         invasive_all_source = pd.read_csv(f"species lists\invasive_all_source.csv")
@@ -127,6 +172,20 @@ def get_usageKey(species_name):
 
 
 def get_all_species():
+    """
+    Retrieve a list of all species names from the invasive_all_source DataFrame.
+
+    This function iterates through all rows in the invasive_all_source DataFrame and collects species names based on the following criteria:
+    - If the 'rank' column value is 'SPECIES', 'FORM', 'SUBSPECIES', or 'VARIETY', the 'canonicalName' column value is added to the list.
+    - If the 'rank' column value does not match the above criteria and 'taxonEPPO' is not null, the 'taxonEPPO' column value is added to the list.
+    - If 'taxonEPPO' is null and 'taxonSINAS' is not null:
+        - If the 'taxonSINAS' column value is already in the list, the 'taxonCABI' column value is added instead.
+        - Otherwise, the 'taxonSINAS' column value is added to the list.
+    - If 'taxonSINAS' is null and 'taxonCABI' is not null, the 'taxonCABI' column value is added to the list.
+
+    Returns:
+        list: A list of species names collected from the invasive_all_source DataFrame.
+    """
     # iterate through all rows in invasive_all_source and return a list of all species names
     # if rank is 'SPECIES', 'FORM', 'SUBSPECIES', 'VARIETY' return canonicalName
     # otherwise if taxonSINAS or taxonCABI is not null return that
@@ -149,6 +208,17 @@ def get_all_species():
 
 
 def check_species_exists(species_name):
+    """
+    Check if a species exists in the database.
+
+    This function takes a species name or usageKey and checks if it exists in the invasive_all_source database.
+
+    Parameters:
+    species_name (str): The name or usageKey of the species to check.
+
+    Returns:
+    bool: True if the species exists in the database, False otherwise.
+    """
     # function takes a species name or usageKey and checks if it exists in the database
     if get_usageKey(species_name) in invasive_all_source["usageKey"].values:
         return True
@@ -162,32 +232,45 @@ def get_first_introductions(
     ISO3_only=False,
     import_additional_native_info=True,
 ):
-    # check_exists = True will raise a KeyError if species is not in database
-    # ISO3_only = True will return only return species location info that are 3 character ISO3 codes. Some other location info includes bioregions or other geonyms
-    # import_additional_native_info = True will import additional native range info, first by seeing if native range info for a particular country is availible from sources that reported later than the first introduction, and second by importing native range info from the native range database
+    """
+    Retrieve the first introduction records for a given species.
+
+    This function retrieves the first introduction records for a specified species from the GIATAR database.
+    It can optionally check if the species exists in the database, filter the results to only include ISO3 codes,
+    and import additional native range information.
+
+    Args:
+        species_name (str): The name of the species for which to retrieve the first introduction records.
+        check_exists (bool, optional): If True, raises a KeyError if the species is not in the database. Defaults to False.
+        ISO3_only (bool, optional): If True, returns only records with 3-character ISO3 codes. Defaults to False.
+        import_additional_native_info (bool, optional): If True, imports additional native range information. Defaults to True.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the first introduction records for the specified species.
+
+    Raises:
+        KeyError: If check_exists is True and the species is not found in the database.
+    """
     usageKey = get_usageKey(species_name)
-    if check_exists == True:
+    if check_exists:
         if not check_species_exists(usageKey):
             raise KeyError(
                 "Species not in Database. Try checking master list with get_all_species()"
             )
 
-    # create df of all first introductinos where usageKey = usageKey
-
+    # Create DataFrame of all first introductions where usageKey matches
     df = first_records.loc[first_records["usageKey"] == usageKey].copy()
-    # for each unique "ISO3" in df, get the first row were year is min
-    # df = df.loc[df.groupby("ISO3")["year"].idxmin()]
-    if ISO3_only == True:
-        # return df where ISO3 column is 3 characters long
+
+    if ISO3_only:
+        # Return DataFrame where ISO3 column is 3 characters long
         df = df.loc[df["ISO3"].str.len() == 3]
 
-    if import_additional_native_info == True:
+    if import_additional_native_info:
         native_ranges = get_native_ranges(usageKey, ISO3=df["ISO3"].unique().tolist())
-        # remove rows where Native is nan
-        # for each row in native_ranges, if native is not nan, set native in df to Native
+        # Remove rows where Native is NaN
         native_ranges = native_ranges.loc[native_ranges["Native"].notna()]
         for index, row in native_ranges.iterrows():
-            if row["Native"] == True:
+            if row["Native"]:
                 df.loc[df["ISO3"] == row["ISO3"], "Native"] = True
             else:
                 df.loc[df["ISO3"] == row["ISO3"], "Native"] = False
@@ -200,6 +283,18 @@ def get_first_introductions(
 def get_all_introductions(
     species_name, check_exists=False, ISO3_only=True, import_additional_native_info=True
 ):
+    """
+    Retrieve all introduction records for a given species.
+    Parameters:
+    species_name (str): The name of the species to query.
+    check_exists (bool, optional): If True, check if the species exists in the database before querying. Defaults to False.
+    ISO3_only (bool, optional): If True, filter results to only include records with valid ISO3 country codes. Defaults to True.
+    import_additional_native_info (bool, optional): If True, import additional native range information. Defaults to True.
+    Returns:
+    pandas.DataFrame: A DataFrame containing introduction records for the specified species, optionally filtered by ISO3 codes and native range information.
+    Raises:
+    KeyError: If check_exists is True and the species does not exist in the database.
+    """
     usageKey = get_usageKey(species_name)
     if check_exists == True:
         if not check_species_exists(usageKey):
@@ -245,6 +340,16 @@ def get_all_introductions(
 
 
 def get_ecology(species_name, check_exists=False):
+    """
+    Retrieve ecological data for a given species from various CSV files.
+    Args:
+        species_name (str): The name of the species to retrieve data for.
+        check_exists (bool, optional): If True, checks if the species exists in the database before proceeding. Defaults to False.
+    Raises:
+        KeyError: If check_exists is True and the species does not exist in the database.
+    Returns:
+        dict: A dictionary where keys are the names of the data sources and values are DataFrames containing the relevant data for the species.
+    """
     if check_exists == True:
         if not check_species_exists(species_name):
             raise KeyError(
@@ -320,6 +425,24 @@ def get_ecology(species_name, check_exists=False):
 
 
 def get_hosts_and_vectors(species_name, check_exists=False):
+    """
+    Retrieve host and vector information for a given species from various data sources.
+    This function queries multiple CSV files to gather information about hosts and vectors
+    associated with a specified species. The results are returned as a dictionary of DataFrames.
+    Parameters:
+    species_name (str): The name of the species to query.
+    check_exists (bool): If True, checks if the species exists in the database before querying.
+                         Raises a KeyError if the species does not exist. Default is False.
+    Returns:
+    dict: A dictionary where keys are the names of the data sources and values are DataFrames
+          containing the query results. Empty DataFrames are excluded from the dictionary.
+    Raises:
+    KeyError: If check_exists is True and the species does not exist in the database.
+    Example:
+    >>> results = get_hosts_and_vectors("species_name", check_exists=True)
+    >>> print(results.keys())
+    dict_keys(['CABI_tohostPlants', 'CABI_topathwayVectors', 'CABI_tovectorsAndIntermediateHosts', 'EPPO_hosts', 'DAISIE_pathways', 'DAISIE_vectors', 'CABI_topathwayCauses'])
+    """
     os.chdir(data_path)
     if check_exists == True:
         if not check_species_exists(species_name):
@@ -395,6 +518,19 @@ def get_hosts_and_vectors(species_name, check_exists=False):
 def get_species_list(
     kingdom=None, phylum=None, taxonomic_class=None, order=None, family=None, genus=None
 ):
+    """
+    Retrieves a list of species usage keys from the GBIF backbone invasive dataset
+    that match the specified taxonomic criteria.
+    Parameters:
+    kingdom (str, optional): The kingdom to filter by (e.g., 'Animalia').
+    phylum (str, optional): The phylum to filter by (e.g., 'Chordata').
+    taxonomic_class (str, optional): The class to filter by (e.g., 'Mammalia').
+    order (str, optional): The order to filter by (e.g., 'Carnivora').
+    family (str, optional): The family to filter by (e.g., 'Felidae').
+    genus (str, optional): The genus to filter by (e.g., 'Panthera').
+    Returns:
+    list: A list of unique usage keys that match the specified taxonomic criteria.
+    """
     GBIF_backbone_invasive = pd.read_csv(r"GBIF data\GBIF_backbone_invasive.csv")
 
     # CREATE LIST OF USAGE KEYS MATCHING taxonomic CRITERIA
@@ -433,6 +569,23 @@ def get_species_list(
 
 
 def get_native_ranges(species_name, ISO3=None, check_exists=False):
+    """
+    Retrieves the native ranges of a given species.
+    Parameters:
+    species_name (str): The name of the species to query.
+    ISO3 (list, optional): A list of ISO3 country codes to check if the species is native. Defaults to None.
+    check_exists (bool, optional): If True, checks if the species exists in the database before querying. Defaults to False.
+    Returns:
+    pandas.DataFrame: If ISO3 is None, returns a DataFrame with columns ['ISO3', 'Source', 'Native', 'Reference', 'bioregion', 'DAISIE_region'] containing native range information.
+    pandas.DataFrame: If ISO3 is provided, returns a DataFrame with columns ['ISO3', 'Native', 'src'] indicating whether the species is native to each ISO3 code.
+    Raises:
+    KeyError: If check_exists is True and the species does not exist in the database.
+    TypeError: If ISO3 is not a list of 3 character strings.
+    UnboundLocalError: If ISO3 is missing from the bioregion crosswalk.
+    Notes:
+    - The function reads data from several CSV files: 'all_sources_native_ranges.csv', 'native_range_crosswalk.csv', and 'all_records.csv'.
+    - The function uses global variables to store the data read from these CSV files.
+    """
     # as default, takes usageKey or species name as string and returns as list of native ISO3 codes
     # if ISO3 is not None, returns True or False if species is native to ISO3 - takes a list of ISO3 as input
     if check_exists == True:
@@ -571,6 +724,16 @@ def get_native_ranges(species_name, ISO3=None, check_exists=False):
 
 
 def get_common_names(species_name, check_exists=False):
+    """
+    Retrieve common names for a given species from DAISIE and EPPO databases.
+    Args:
+        species_name (str): The scientific name of the species.
+        check_exists (bool, optional): If True, checks if the species exists in the database before proceeding. Defaults to False.
+    Raises:
+        KeyError: If check_exists is True and the species is not found in the database.
+    Returns:
+        dict: A dictionary containing DataFrames of common names from DAISIE and EPPO databases, keyed by their source names.
+    """
     if check_exists == True:
         if not check_species_exists(species_name):
             raise KeyError(
@@ -603,6 +766,15 @@ def get_common_names(species_name, check_exists=False):
 
 
 def get_trait_table_list():
+    """
+    Returns a list of trait table names.
+
+    The trait tables include various datasets related to climate, environments,
+    host plants, pathways, vectors, habitats, and other relevant information.
+
+    Returns:
+        list: A list of strings representing the names of trait tables.
+    """
     return [
         "CABI_rainfall",
         "CABI_airtemp",
@@ -630,6 +802,21 @@ def get_trait_table_list():
 
 # Function to select a specific trait table
 def get_trait_table(table_name, usageKey=None):
+    """
+    Retrieve a trait table by its name and optionally filter by usageKey.
+    This function loads a specified trait table from a CSV file if it has not
+    been loaded already. If the table is already loaded, it retrieves it from
+    the global namespace. Optionally, it can filter the table rows based on
+    the provided usageKey.
+    Parameters:
+    table_name (str): The name of the trait table to retrieve.
+    usageKey (str, optional): The usageKey to filter the table rows. Defaults to None.
+    Returns:
+    pandas.DataFrame: The requested trait table, optionally filtered by usageKey.
+    Raises:
+    ValueError: If the table name is not found in the list of available tables.
+    ValueError: If the file path for the specified table name is not specified.
+    """
     if table_name not in get_trait_table_list():
         raise ValueError(f"Table name '{table_name}' not found.")
 
@@ -657,3 +844,81 @@ def get_trait_table(table_name, usageKey=None):
         table = table[table["usageKey"] == usageKey]
 
     return table
+
+
+def get_GIATAR_current(data_dir):
+    """
+    Download the latest version of the GIATAR dataset from Zenodo and extract it to the given directory.
+    If the files already exist, they will be overwritten.
+
+    Args:
+        data_dir (str): The directory where the dataset will be extracted.
+
+    Returns:
+        None
+    """
+    url = "https://zenodo.org/api/records/13138446"
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        zip_url = data["files"][0]["links"]["self"]
+        print(f"Found dataset at {zip_url}. Downloading GIATAR dataset...")
+        zip_response = requests.get(zip_url)
+        if zip_response.status_code == 200:
+            with zipfile.ZipFile(io.BytesIO(zip_response.content)) as z:
+                z.extractall(data_dir)
+            print("GIATAR dataset downloaded and extracted successfully.")
+        else:
+            print(
+                f"Failed to download GIATAR zip file. Status code: {zip_response.status_code}"
+            )
+    else:
+        print(
+            f"Failed to retrieve GIATAR dataset information. Status code: {response.status_code}"
+        )
+
+
+def get_taxa_by_host(host_name):
+    """
+    Retrieve a list of taxa that are associated with a given host.
+
+    Args:
+        host_name (str): The name of the host to query. This should be the host taxa's partial or full scientific name.
+
+    Returns:
+        list: A list of usageKeys for associated with matches for the specified host name.
+    """
+    CABI_hosts = pd.read_csv(
+        r"CABI data\CABI_tables\tohostPlants.csv", dtype={"usageKey": "str"}
+    )
+    EPPO_hosts = pd.read_csv(r"EPPO data\EPPO_hosts.csv", dtype={"usageKey": "str"})
+
+    # Filter the dataframes to get rows where the host name matches
+    cabi_hosts = CABI_hosts[
+        CABI_hosts["Plant name"].str.contains(host_name, case=False, na=False)
+    ]
+    eppo_hosts = EPPO_hosts[
+        EPPO_hosts["full_name"].str.contains(host_name, case=False, na=False)
+    ]
+    # Print all matched host names if either cabi_hosts or eppo_hosts has more than one match
+    if len(cabi_hosts.index) > 1 or len(eppo_hosts.index) > 1:
+        print(f"Host name '{host_name}' matched the following host species:")
+        if len(cabi_hosts) > 1:
+            print("CABI:")
+            print(", ".join(cabi_hosts["Plant name"].unique()))
+        if len(eppo_hosts) > 1:
+            print("EPPO:")
+            print(", ".join(eppo_hosts["full_name"].unique()))
+
+        # Combine the results and get unique taxa
+        combined_hosts = pd.concat([cabi_hosts, eppo_hosts])
+        taxa_list = combined_hosts["usageKey"].unique().tolist()
+
+        # Print the length of the combined list
+        print(
+            f"Total number of invasive taxa associated with '{host_name}': {len(taxa_list)}"
+        )
+    else:
+        print(f"No host species found for '{host_name}'")
+        taxa_list = []
+    return taxa_list
