@@ -14,19 +14,19 @@ library(readr)
 library(dotenv)
 library(httr)
 
-if (!length(Sys.getenv("GIATAR_path")) | Sys.getenv("GIATAR_path") == "") {
+if (!length(Sys.getenv("DATA_PATH")) | Sys.getenv("DATA_PATH") == "") {
   # Prompt the user to enter GIATAR_path
-  cat("GIATAR_path environment variable not found.\n")
-  GIATAR_path <- readline(prompt = "Enter GIATAR_path: ")
+  cat("DATA_PATH environment variable not found.\n")
+  GIATAR_path <- readline(prompt = "Enter DATA_PATH: ")
 
   # Set the entered value as an environment variable
-  Sys.setenv(GIATAR_path = GIATAR_path)
+  Sys.setenv(DATA_PATH = DATA_PATH)
 } else {
   # Retrieve the value of GIATAR_path environment variable
-  GIATAR_path <- Sys.getenv("GIATAR_path")
+  DATA_PATH <- Sys.getenv("DATA_PATH")
 }
 
-setwd(GIATAR_path)
+setwd(DATA_PATH)
 
 invasive_all_source <- read_csv("species lists/invasive_all_source.csv", col_types = cols(usageKey = col_character()))
 first_records <- read_csv("occurrences/first_records.csv", col_types = cols(usageKey = col_character()), lazy = FALSE)
@@ -706,6 +706,7 @@ get_GIATAR_current <- function(data_dir) {
   } else {
     cat("Failed to retrieve GIATAR dataset information. Status code:", httr::status_code(response), "\n")
   }
+}
 
 #' Retrieve Taxa Associated with a Given Host
 #'
@@ -718,7 +719,7 @@ get_GIATAR_current <- function(data_dir) {
 #'
 #' @examples
 #' \dontrun{
-#' get_taxa_by_host("Quercus")
+#' get_taxa_by_host("mays")
 #' }
 get_taxa_by_host <- function(host_name) {
   CABI_hosts <- readr::read_csv("CABI data/CABI_tables/tohostPlants.csv", col_types = readr::cols(usageKey = readr::col_character()))
@@ -754,5 +755,99 @@ get_taxa_by_host <- function(host_name) {
 
   return(taxa_list)
 }
-  return(taxa_list)
+
+#' Retrieve Taxa Associated with a Given Pathway
+#'
+#' This function retrieves a list of taxa that are associated with a given pathway.
+#'
+#' @param pathway_name A string specifying the name of the pathway to query. This should be the pathway's partial or full name.
+#'
+#' @return A list of usageKeys associated with matches for the specified pathway name.
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#'   taxa_list <- get_taxa_by_pathway("ornamental")
+#'   print(taxa_list)
+#' }
+get_taxa_by_pathway <- function(pathway_name) {
+    CABI_pathways <- readr::read_csv("CABI data/CABI_tables/topathwayVectors.csv", col_types = readr::cols(usageKey = readr::col_character()))
+    DAISIE_pathways <- readr::read_csv("DAISIE data/DAISIE_pathways.csv", col_types = readr::cols(usageKey = readr::col_character()))
+    CABI_pathway_causes <- readr::read_csv("CABI data/CABI_tables/topathwayCauses.csv", col_types = readr::cols(usageKey = readr::col_character()))
+
+    # Combine the columns "Vector" and "Notes" to create "pathway" in cabi_pathways
+    CABI_pathways$pathway <- paste(CABI_pathways$Vector, CABI_pathways$Notes, sep = ": ")
+
+    # Combine the columns "Cause" and "Notes" to create "pathway" in cabi_pathway_causes
+    CABI_pathway_causes$pathway <- paste(CABI_pathway_causes$Cause, CABI_pathway_causes$Notes, sep = ": ")
+
+    # Filter the dataframes to get rows where the pathway name matches
+    cabi_pathways <- subset(CABI_pathways, grepl(pathway_name, pathway, ignore.case = TRUE))
+    daisie_pathways <- subset(DAISIE_pathways, grepl(pathway_name, pathway, ignore.case = TRUE))
+    cabi_pathway_causes <- subset(CABI_pathway_causes, grepl(pathway_name, pathway, ignore.case = TRUE))
+
+    # Print all matched pathway names if any dataframe has more than one match
+    if (nrow(cabi_pathways) > 1 || nrow(daisie_pathways) > 1 || nrow(cabi_pathway_causes) > 1) {
+        cat(sprintf("Pathway name '%s' matched the following pathways:\n", pathway_name))
+        if (nrow(cabi_pathways) > 1) {
+            cat("CABI Pathways:\n")
+            cat(paste(unique(cabi_pathways$pathway), collapse = ", "), "\n")
+        }
+        if (nrow(daisie_pathways) > 1) {
+            cat("DAISIE Pathways:\n")
+            cat(paste(unique(daisie_pathways$pathway), collapse = ", "), "\n")
+        }
+        if (nrow(cabi_pathway_causes) > 1) {
+            cat("CABI Pathway Causes:\n")
+            cat(paste(unique(cabi_pathway_causes$pathway), collapse = ", "), "\n")
+        }
+
+        # Combine the results and get unique taxa
+        combined_pathways <- rbind(cabi_pathways, daisie_pathways, cabi_pathway_causes)
+        taxa_list <- unique(combined_pathways$usageKey)
+
+        # Print the length of the combined list
+        cat(sprintf("Total number of invasive taxa associated with '%s': %d\n", pathway_name, length(taxa_list)))
+    } else {
+        cat(sprintf("No pathways found for '%s'\n", pathway_name))
+        taxa_list <- list()
+    }
+    return(taxa_list)
+}
+
+#' Retrieve Taxa Associated with a Given Vector
+#'
+#' This function retrieves a list of taxa that are associated with a given vector.
+#'
+#' @param vector_name A string specifying the name of the vector to query. This should be the vector species' partial or full scientific name.
+#'
+#' @return A list of usageKeys associated with matches for the specified vector name.
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#'   taxa_list <- get_taxa_by_vector("Aedes aegypti")
+#'   print(taxa_list)
+#' }
+get_taxa_by_vector <- function(vector_name) {
+    CABI_vectors <- readr::read_csv("CABI data/CABI_tables/tovectorsAndIntermediateHosts.csv", col_types = readr::cols(usageKey = readr::col_character()))
+
+    # Filter the dataframe to get rows where the vector name matches
+    cabi_vectors <- subset(CABI_vectors, grepl(vector_name, Vector, ignore.case = TRUE))
+
+    # Print all matched vector names if the dataframe has more than one match
+    if (nrow(cabi_vectors) > 1) {
+        cat(sprintf("Vector name '%s' matched the following vectors:\n", vector_name))
+        cat(paste(unique(cabi_vectors$Vector), collapse = ", "), "\n")
+
+        # Get unique taxa
+        taxa_list <- unique(cabi_vectors$usageKey)
+
+        # Print the length of the list
+        cat(sprintf("Total number of invasive taxa associated with '%s': %d\n", vector_name, length(taxa_list)))
+    } else {
+        cat(sprintf("No vectors found for '%s'\n", vector_name))
+        taxa_list <- list()
+    }
+    return(taxa_list)
 }

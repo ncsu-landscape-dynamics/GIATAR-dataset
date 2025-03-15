@@ -17,27 +17,6 @@ import zipfile
 import io
 
 
-# get_species_name(usageKey) - returns species name as string - takes usageKey as string or int
-
-# get_usageKey(species_name) - returns usageKey as string - takes species name as string
-
-# get_all_species() - returns list of all species names in database - no inputs
-
-# check_species_exists(species_name) - returns True or False - takes species name as string
-
-# get_first_introductions(usageKey, check_exists=False, ISO3_only=False, import_additional_native_info=True) - returns dataframe of first introductions - takes usageKey as string or int, check_exists=True will raise a KeyError if species is not in database, ISO3_only=True will return only return species location info that are 3 character ISO3 codes. Some other location info includes bioregions or other geonyms, import_additional_native_info=True will import additional native range info, first by seeing if native range info for a particular country is availible from sources that reported later than the first introduction, and second by importing native range info from the native range database
-
-# get_all_introductions(usageKey, check_exists=False, ISO3_only=True) - returns dataframe of all introductions - takes usageKey as string or int, check_exists=True will raise a KeyError if species is not in database, ISO3_only=True will return only return species location info that are 3 character ISO3 codes. Some other location info includes bioregions or other geonyms
-
-# get_ecology(species_name) - returns dictionary of dataframes of ecology info - takes species name as string
-
-# get_hosts_and_vectors(species_name) - returns dictionary of dataframes of host and vector info - takes species name as string
-
-# get_species_list(kingdom=None, phylum=None, taxonomic_class=None, order=None, family=None, genus=None) - returns list of usageKeys matching taxonomic criteria - takes kingdom, phylum, taxonomic_class, order, family, genus as strings
-
-# get_native_ranges(usageKey, ISO3=None) - returns dataframe of native ranges - takes usageKey as string or int, ISO3=None returns dataframe of native ranges, ISO3=list returns dataframe of native ranges and True or False if species is native to ISO3 - takes a list of ISO3 as input
-
-
 #### DATA PATH ####
 def create_dotenv(dp):
     """
@@ -920,5 +899,114 @@ def get_taxa_by_host(host_name):
         )
     else:
         print(f"No host species found for '{host_name}'")
+        taxa_list = []
+    return taxa_list
+
+
+def get_taxa_by_pathway(pathway_name):
+    """
+    Retrieve a list of taxa that are associated with a given pathway.
+
+    Args:
+        pathway_name (str): The name of the pathway to query. Pathways are typically common-language key terms or phrases like "ornamental", "wind", or "plant parts".
+
+    Returns:
+        list: A list of usageKeys for associated with matches for the specified pathway name.
+    """
+    CABI_pathways = pd.read_csv(
+        r"CABI data\CABI_tables\topathwayVectors.csv", dtype={"usageKey": "str"}
+    )
+    DAISIE_pathways = pd.read_csv(
+        r"DAISIE data\DAISIE_pathways.csv", dtype={"usageKey": "str"}
+    )
+    CABI_pathway_causes = pd.read_csv(
+        r"CABI data\CABI_tables\topathwayCauses.csv", dtype={"usageKey": "str"}
+    )
+
+    # Filter the dataframes to get rows where the pathway name matches
+    cabi_pathways = CABI_pathways[
+        CABI_pathways["Vector"].str.contains(pathway_name, case=False, na=False)
+    ]
+    # Combine the columns "Vector" and "Notes" to create "pathway"
+    cabi_pathways["pathway"] = cabi_pathways["Vector"] + ": " + cabi_pathways["Notes"]
+    daisie_pathways = DAISIE_pathways[
+        DAISIE_pathways["pathway"].str.contains(pathway_name, case=False, na=False)
+    ]
+    # Combine the columns "Cause" and "Notes" to create "pathway"
+    cabi_pathway_causes["pathway"] = (
+        cabi_pathway_causes["Cause"] + ": " + cabi_pathway_causes["Notes"]
+    )
+    cabi_pathway_causes = CABI_pathway_causes[
+        CABI_pathway_causes["pathway"].str.contains(pathway_name, case=False, na=False)
+    ]
+    #
+
+    # Print all matched pathway names if any dataframe has more than one match
+    if (
+        len(cabi_pathways.index) > 1
+        or len(daisie_pathways.index) > 1
+        or len(cabi_pathway_causes.index) > 1
+    ):
+        print(f"Pathway name '{pathway_name}' matched the following pathways:")
+        if len(cabi_pathways) > 1:
+            print("CABI Pathways:")
+            print(", ".join(cabi_pathways["pector"].unique()))
+        if len(daisie_pathways) > 1:
+            print("DAISIE Pathways:")
+            print(", ".join(daisie_pathways["pathway"].unique()))
+        if len(cabi_pathway_causes) > 1:
+            print("CABI Pathway Causes:")
+            print(", ".join(cabi_pathway_causes["pathway"].unique()))
+
+        # Combine the results and get unique taxa
+        combined_pathways = pd.concat(
+            [cabi_pathways, daisie_pathways, cabi_pathway_causes]
+        )
+        taxa_list = combined_pathways["usageKey"].unique().tolist()
+
+        # Print the length of the combined list
+        print(
+            f"Total number of invasive taxa associated with '{pathway_name}': {len(taxa_list)}"
+        )
+    else:
+        print(f"No pathways found matching '{pathway_name}'")
+        taxa_list = []
+    return taxa_list
+
+
+def get_taxa_by_vector(vector_name):
+    """
+    Retrieve a list of taxa that are associated with a given vector.
+
+    Args:
+        vector_name (str): The name of the vector to query. This should be the vector species' partial or full scientific name.
+
+    Returns:
+        list: A list of usageKeys for associated with matches for the specified vector name.
+    """
+    CABI_vectors = pd.read_csv(
+        r"CABI data\CABI_tables\tovectorsAndIntermediateHosts.csv",
+        dtype={"usageKey": "str"},
+    )
+
+    # Filter the dataframe to get rows where the vector name matches
+    cabi_vectors = CABI_vectors[
+        CABI_vectors["Vector"].str.contains(vector_name, case=False, na=False)
+    ]
+
+    # Print all matched vector names if the dataframe has more than one match
+    if len(cabi_vectors.index) > 1:
+        print(f"Vector name '{vector_name}' matched the following vectors:")
+        print(", ".join(cabi_vectors["Vector"].unique()))
+
+        # Get unique taxa
+        taxa_list = cabi_vectors["usageKey"].unique().tolist()
+
+        # Print the length of the list
+        print(
+            f"Total number of invasive taxa associated with '{vector_name}': {len(taxa_list)}"
+        )
+    else:
+        print(f"No vectors found for '{vector_name}'")
         taxa_list = []
     return taxa_list
