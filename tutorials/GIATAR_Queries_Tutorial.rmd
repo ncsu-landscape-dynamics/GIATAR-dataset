@@ -1,6 +1,6 @@
 ---
 title: "Global Invasive and Alien Traits and Records (GIATAR) Dataset - Query Functions Tutorial"
-author: "Thom Worm"
+author: "Thom Worm and Ariel Saffer"
 date: "2024-07-22"
 output: html_document
 ---
@@ -17,17 +17,94 @@ The environment setup file supplied with the code for this project will suffice 
 
 ## Setting Paths
 
-### To functions
-
-We suggest putting the `GIATAR_query_functions.R` file (available in the queries folder of the DOI released dataset or on the project GitHub `https://github.com/ncsu-landscape-dynamics/GIATAR-dataset` for the most current version) in your project directory.
-
 ### To data
 
-`GIATAR_query_functions.R` contains `data_path` as the first line of code in the file - set this to the dataset directory of GIATAR. If you prefer, you can call `create_dotenv(pathtodata)` to create a `.env` file that permanently sets this path.
+The .env file contains a variable called `DATA_PATH` - set this to the dataset directory of GIATAR. If you prefer, you can call `create_dotenv(pathtodata)` to create a `.env` file that permanently sets this path.
 
 ## usageKeys
 
 Unique ID Keys for species in the dataset are referred to as `usageKeys`, following the structure and naming of usageKeys from GBIF. Where possible, we have retained GBIF usageKeys as unique IDs for taxa - otherwise, we have generated unique IDs that won't overlap with GBIF usageKeys.
+
+## functions
+returns species name as string - takes usageKey as string or int
+
+### get_GIATAR_current(data_dir)
+returns the current version of the GIATAR dataset to the directory provided.
+
+This function fetches the current version of the GIATAR dataset, ensuring that users have access to the most recent data available at the time of the query. 
+
+### get_usageKey(species_name) 
+ returns usageKey as string - takes species name as string
+
+### get_all_species() 
+ returns list of all species names in dataset - no inputs
+
+### check_species_exists(species_name) 
+ returns True or False - takes species name as string
+
+### get_first_introductions(usageKey, check_exists=False, ISO3_only=False, import_additional_native_info=True) 
+
+
+returns dataframe of first introductions takes usageKey as string or int
+
+check_exists=True will raise a KeyError if species is not in dataset
+
+ISO3_only=True will return only return species location info that are 3 character ISO3 codes. Some other location info includes bioregions or other geonyms
+
+import_additional_native_info=True will import additional native range info, first by seeing if native range info for a particular country is availible from sources that reported later than the first introduction, and second by importing native range info from the file of native range info unique to GIATAR
+
+### get_all_introductions(usageKey, check_exists=False, ISO3_only=True) 
+
+returns dataframe of all introductions - takes usageKey as string or int 
+check_exists=True will raise a KeyError if species is not in dataset
+ISO3_only=True will return only return species location info that are 3 character ISO3 codes. Some other location info includes bioregions or other geonyms
+
+import_additional_native_info=True will import additional native range info, first by seeing if native range info for a particular country is availible from sources that reported later than the first introduction, and second by importing native range info from the file of native range info unique to GIATAR
+
+### get_ecology(species_name) 
+ returns dictionary of dataframes of ecology info - takes species name as string. Ecology info returned by this function includes rainfall, airtemp, climate, lat/altitude, water temp and wether a pest utilizing wood packaging.
+
+ Ecological info is variously formatted for different species - e.g. air temperature might include max, min, range or other info. We reccomend spending time with the outputs to find the information you want. 
+
+
+
+### get_hosts_and_vectors(species_name) 
+returns dictionary of dataframes of host and vector info - takes species name as string
+This tool returns hosts (plant hosts for herbivorous insects, animal hosts for diseases and parasites) and vectors (either zoonotic or plant vectors - mostly for diseases)
+
+
+
+### get_species_list(kingdom=None, phylum=None, taxonomic_class=None, order=None, family=None, genus=None)
+ returns list of usageKeys matching taxonomic criteria - takes kingdom, phylum, taxonomic_class, order, family, genus as strings. This function can help select a group of organisms in the dataset matching the search criterion. Note that the term <code>class</code> is protected in python, so we refer to the taxonomic grouping as taxonomic_class
+
+
+
+### get_native_ranges(usageKey, ISO3=None) 
+returns dataframe of native ranges - takes usageKey as string or int.
+
+The GIATAR dataset stores native range information in several ways - some better-studied species have native information as a binary true/false for the country level. Many other species have native range information stored only as biogeographic zones e.g. palearctic. We provide functionality to map this biogeographic zone data to presence-absence t/f using a crosswalk, which is availible in the native ranges subfolder of the dataset.
+
+When the user calls <code>get_native_ranges()</code> and ISO3 is set to None, the function returns all avalible information about the species. 
+If the user wishes to use the native-range to country-presence crosswalk, they should provide ISO3 as a python list of ISO3 standard country codes e.g. <code>['USA','CHN]</code> - the function will then use the crosswalk to provide true/false information on the native status of the species if there is biogeographic information avalible. When biogeographic information and more specific country/native binary information is avalible, the function defaults to the more specific country true/false info. 
+
+ISO3=list returns dataframe of native ranges and True or False if species is native to ISO3 - takes a list of ISO3 codes for countries as input. See examples below for context.
+
+## Functions to seek a list of invasive species
+
+### get_taxa_by_host(host_name)
+returns a list of usageKeys for taxa that use the specified host - takes the host name as a string. This function helps identify all taxa in the dataset that are associated with a particular host species. 
+
+For example, if you want to find all species that use "Citrus" as a host, you can use this function to get a list of their usageKeys. This is particularly useful for researchers looking to study the suite of invasive species affecting or traveling with a given host species.
+
+### get_taxa_by_pathway(pathway_name)
+returns a list of usageKeys for taxa that are associated with the specified pathway - takes the pathway name as a string. This function helps identify all taxa in the dataset that are associated with a particular pathway.
+
+For example, if you want to find all species that are introduced through "Horticulture" as a pathway, you can use this function to get a list of their usageKeys. This is particularly useful for researchers looking to study the suite of invasive species introduced through a specific pathway.
+
+### get_taxa_by_vector(vector_name)
+returns a list of usageKeys for taxa that are associated with the specified vector - takes the vector name as a string. This function helps identify all taxa in the dataset that are associated with a particular vector.
+
+For example, if you want to find all species that are transmitted by "Aedes aegypti" as a vector, you can use this function to get a list of their usageKeys. This is particularly useful for researchers looking to study the suite of invasive species transmitted by a specific vector.
 
 ## Basic Operations
 
@@ -58,7 +135,7 @@ get_first_introductions("Apis mellifera", import_additional_native_info = T)
 get_ecology("Thrips tabaci")
 
 # Get hosts and vectors
-get_hosts_and_vectors('Icerya purchasi')
+get_hosts_and_vectors("Icerya purchasi")
 
 # Get native ranges
 get_native_ranges("Apis mellifera")
@@ -73,6 +150,37 @@ get_usageKey("Pancratium maritimum")
 get_trait_table_list()
 
 # Get trait table
-get_trait_table('CABI_airtemp')
+get_trait_table("CABI_airtemp")
 ```
 
+## Querying Invasive Taxa by Traits
+
+You can also query invasive taxa by traits. This lets you then get records for a suite of invaders. Here are some examples.
+
+```{r invasive_taxa_by_traits}
+# Example 1: Querying by pathway
+pathway_name <- "ornamental"
+taxa_by_pathway <- get_taxa_by_pathway(pathway_name)
+print(taxa_by_pathway)
+
+# Example 2: Querying by vector
+vector_name <- "Aedes aegypti"
+taxa_by_vector <- get_taxa_by_vector(vector_name)
+print(taxa_by_vector)
+
+# Example 3: Querying by host
+host_name <- "mays"
+taxa_by_host <- get_taxa_by_host(host_name)
+print(taxa_by_host)
+```
+
+```{r introductions_by_trait}
+# Create a table of first introductions for all taxa in the taxa_by_host example
+first_introductions_df <- data.frame()
+for (taxon in taxa_by_host$canonicalName) {
+    # print(taxon)
+    df <- get_first_introductions(taxon)
+    df$canonicalName <- taxon
+    first_introductions_df <- bind_rows(first_introductions_df, df)
+}
+```
