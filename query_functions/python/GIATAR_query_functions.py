@@ -825,13 +825,13 @@ def get_trait_table(table_name, usageKey=None):
     return table
 
 
-def get_GIATAR_current(data_dir):
+def get_GIATAR_current(data_dir=os.getcwd()):
     """
     Download the latest version of the GIATAR dataset from Zenodo and extract it to the given directory.
     If the files already exist, they will be overwritten.
 
     Args:
-        data_dir (str): The directory where the dataset will be extracted.
+        data_dir (str): The directory where the dataset will be extracted. The default is the current working directory.
 
     Returns:
         None
@@ -865,7 +865,7 @@ def get_taxa_by_host(host_name):
         host_name (str): The name of the host to query. This should be the host taxa's partial or full scientific name.
 
     Returns:
-        list: A list of usageKeys for associated with matches for the specified host name.
+        list: A list of taxa names (canonical name) for taxa associated with matches for the specified host name.
     """
     CABI_hosts = pd.read_csv(
         r"CABI data\CABI_tables\tohostPlants.csv", dtype={"usageKey": "str"}
@@ -891,8 +891,15 @@ def get_taxa_by_host(host_name):
 
         # Combine the results and get unique taxa
         combined_hosts = pd.concat([cabi_hosts, eppo_hosts])
-        taxa_list = combined_hosts["usageKey"].unique().tolist()
-
+        taxa_keys = combined_hosts["usageKey"].unique().tolist()
+        # Get the canonicalNames associated with these usageKeys
+        taxa_list = (
+            invasive_all_source.loc[invasive_all_source["usageKey"].isin(taxa_keys)][
+                "canonicalName"
+            ]
+            .unique()
+            .tolist()
+        )
         # Print the length of the combined list
         print(
             f"Total number of invasive taxa associated with '{host_name}': {len(taxa_list)}"
@@ -911,7 +918,7 @@ def get_taxa_by_pathway(pathway_name):
         pathway_name (str): The name of the pathway to query. Pathways are typically common-language key terms or phrases like "ornamental", "wind", or "plant parts".
 
     Returns:
-        list: A list of usageKeys for associated with matches for the specified pathway name.
+        list: A list of taxa names (canonical name) for taxa associated with matches for the specified pathway name.
     """
     CABI_pathways = pd.read_csv(
         r"CABI data\CABI_tables\topathwayVectors.csv", dtype={"usageKey": "str"}
@@ -924,17 +931,18 @@ def get_taxa_by_pathway(pathway_name):
     )
 
     # Filter the dataframes to get rows where the pathway name matches
-    cabi_pathways = CABI_pathways[
-        CABI_pathways["Vector"].str.contains(pathway_name, case=False, na=False)
-    ]
     # Combine the columns "Vector" and "Notes" to create "pathway"
-    cabi_pathways["pathway"] = cabi_pathways["Vector"] + ": " + cabi_pathways["Notes"]
+    CABI_pathways["pathway"] = CABI_pathways["Vector"] + ": " + CABI_pathways["Notes"]
+    cabi_pathways = CABI_pathways[
+        CABI_pathways["pathway"].str.contains(pathway_name, case=False, na=False)
+    ]
+
     daisie_pathways = DAISIE_pathways[
         DAISIE_pathways["pathway"].str.contains(pathway_name, case=False, na=False)
     ]
     # Combine the columns "Cause" and "Notes" to create "pathway"
-    cabi_pathway_causes["pathway"] = (
-        cabi_pathway_causes["Cause"] + ": " + cabi_pathway_causes["Notes"]
+    CABI_pathway_causes["pathway"] = (
+        CABI_pathway_causes["Cause"] + ": " + CABI_pathway_causes["Notes"]
     )
     cabi_pathway_causes = CABI_pathway_causes[
         CABI_pathway_causes["pathway"].str.contains(pathway_name, case=False, na=False)
@@ -950,7 +958,7 @@ def get_taxa_by_pathway(pathway_name):
         print(f"Pathway name '{pathway_name}' matched the following pathways:")
         if len(cabi_pathways) > 1:
             print("CABI Pathways:")
-            print(", ".join(cabi_pathways["pector"].unique()))
+            print(", ".join(cabi_pathways["pathway"].unique()))
         if len(daisie_pathways) > 1:
             print("DAISIE Pathways:")
             print(", ".join(daisie_pathways["pathway"].unique()))
@@ -962,7 +970,15 @@ def get_taxa_by_pathway(pathway_name):
         combined_pathways = pd.concat(
             [cabi_pathways, daisie_pathways, cabi_pathway_causes]
         )
-        taxa_list = combined_pathways["usageKey"].unique().tolist()
+        taxa_keys = combined_pathways["usageKey"].unique().tolist()
+        # Get the canonicalNames associated with these usageKeys
+        taxa_list = (
+            invasive_all_source.loc[invasive_all_source["usageKey"].isin(taxa_keys)][
+                "canonicalName"
+            ]
+            .unique()
+            .tolist()
+        )
 
         # Print the length of the combined list
         print(
@@ -982,7 +998,7 @@ def get_taxa_by_vector(vector_name):
         vector_name (str): The name of the vector to query. This should be the vector species' partial or full scientific name.
 
     Returns:
-        list: A list of usageKeys for associated with matches for the specified vector name.
+        list: A list of taxa names (canonical name) for taxa associated with matches for the specified vector name.
     """
     CABI_vectors = pd.read_csv(
         r"CABI data\CABI_tables\tovectorsAndIntermediateHosts.csv",
@@ -1000,7 +1016,16 @@ def get_taxa_by_vector(vector_name):
         print(", ".join(cabi_vectors["Vector"].unique()))
 
         # Get unique taxa
-        taxa_list = cabi_vectors["usageKey"].unique().tolist()
+        taxa_keys = cabi_vectors["usageKey"].unique().tolist()
+
+        # Get the canonicalNames associated with these usageKeys
+        taxa_list = (
+            invasive_all_source.loc[invasive_all_source["usageKey"].isin(taxa_keys)][
+                "canonicalName"
+            ]
+            .unique()
+            .tolist()
+        )
 
         # Print the length of the list
         print(

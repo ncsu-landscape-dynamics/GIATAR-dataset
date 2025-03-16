@@ -215,7 +215,6 @@ get_first_introductions <- function(species_name, check_exists = FALSE, ISO3_onl
 
     # Filter out values with more than 3 characters
     ISO3_list <- ISO3_list[nchar(ISO3_list) == 3]
-    print(typeof(ISO3_list))
     native_ranges <- get_native_ranges(usageKey, ISO3 = unique(ISO3_list))
 
     native_ranges <- native_ranges[!is.na(native_ranges$Native), ]
@@ -677,7 +676,7 @@ get_trait_table <- function(table_name, usageKey = NULL) {
 #' This function downloads the latest version of the GIATAR dataset from Zenodo and extracts it to the specified directory.
 #' If the files already exist, they will be overwritten.
 #'
-#' @param data_dir A string specifying the directory where the dataset will be extracted.
+#' @param data_dir A string specifying the directory where the dataset will be extracted. The default is the current working directory.
 #'
 #' @return None
 #' @export
@@ -686,7 +685,7 @@ get_trait_table <- function(table_name, usageKey = NULL) {
 #' \dontrun{
 #' get_GIATAR_current("path/to/data_directory")
 #' }
-get_GIATAR_current <- function(data_dir) {
+get_GIATAR_current <- function(data_dir = getwd()) {
   url <- "https://zenodo.org/api/records/13138446"
   response <- httr::GET(url)
   if (httr::status_code(response) == 200) {
@@ -714,7 +713,7 @@ get_GIATAR_current <- function(data_dir) {
 #'
 #' @param host_name A string specifying the name of the host to query. This should be the host taxa's partial or full scientific name.
 #'
-#' @return A list of usageKeys associated with matches for the specified host name.
+#' @return A list of taxon names (canonical name) for taxa associated with matches for the specified host name.
 #' @export
 #'
 #' @examples
@@ -744,7 +743,10 @@ get_taxa_by_host <- function(host_name) {
 
   # Combine the results and get unique taxa
   combined_hosts <- dplyr::bind_rows(cabi_hosts, eppo_hosts)
-  taxa_list <- unique(combined_hosts$usageKey)
+  taxa_keys <- unique(combined_hosts$usageKey)
+  # Get the canonicalNames associated with these usageKeys
+  taxa_list <- invasive_all_source[invasive_all_source$usageKey %in% taxa_keys, "canonicalName"]
+  
 
   # Print the length of the combined list
   cat(sprintf("Total number of invasive taxa associated with '%s': %d\n", host_name, length(taxa_list)))
@@ -762,7 +764,7 @@ get_taxa_by_host <- function(host_name) {
 #'
 #' @param pathway_name A string specifying the name of the pathway to query. This should be the pathway's partial or full name.
 #'
-#' @return A list of usageKeys associated with matches for the specified pathway name.
+#' @return A list of taxon names (canonical name) for taxa associated with matches for the specified pathway name.
 #' @export
 #'
 #' @examples
@@ -804,7 +806,9 @@ get_taxa_by_pathway <- function(pathway_name) {
 
         # Combine the results and get unique taxa
         combined_pathways <- rbind(cabi_pathways, daisie_pathways, cabi_pathway_causes)
-        taxa_list <- unique(combined_pathways$usageKey)
+        taxa_keys <- unique(combined_pathways$usageKey)
+        # Get the canonicalNames associated with these usageKeys
+        taxa_list <- invasive_all_source[invasive_all_source$usageKey %in% taxa_keys, "canonicalName"]
 
         # Print the length of the combined list
         cat(sprintf("Total number of invasive taxa associated with '%s': %d\n", pathway_name, length(taxa_list)))
@@ -821,7 +825,7 @@ get_taxa_by_pathway <- function(pathway_name) {
 #'
 #' @param vector_name A string specifying the name of the vector to query. This should be the vector species' partial or full scientific name.
 #'
-#' @return A list of usageKeys associated with matches for the specified vector name.
+#' @return A list of taxon names (canonical name) for taxa associated with matches for the specified vector name.
 #' @export
 #'
 #' @examples
@@ -841,8 +845,10 @@ get_taxa_by_vector <- function(vector_name) {
         cat(paste(unique(cabi_vectors$Vector), collapse = ", "), "\n")
 
         # Get unique taxa
-        taxa_list <- unique(cabi_vectors$usageKey)
-
+        taxa_keys <- unique(cabi_vectors$usageKey)
+        # Get the canonicalNames associated with these usageKeys
+        taxa_list <- invasive_all_source[invasive_all_source$usageKey %in% taxa_keys, "canonicalName"]
+        
         # Print the length of the list
         cat(sprintf("Total number of invasive taxa associated with '%s': %d\n", vector_name, length(taxa_list)))
     } else {
