@@ -73,7 +73,7 @@ get_species_name <- function(usageKey) {
     usageKey <- gsub(".0", "", as.character(usageKey))
   }
   if (usageKey %in% invasive_all_source$usageKey) {
-    return(invasive_all_source[invasive_all_source$usageKey == usageKey, "canonicalName"])
+    return(dplyr::filter(invasive_all_source, usageKey == usageKey)$canonicalName)
   }
 }
 
@@ -95,21 +95,20 @@ get_usageKey <- function(species_name) {
   if (!exists("invasive_all_source")) {
     invasive_all_source <- read.csv("species lists\\invasive_all_source.csv")
   }
-
   if ("canonicalName" %in% colnames(invasive_all_source) && species_name %in% invasive_all_source$canonicalName) {
-    return(invasive_all_source$usageKey[invasive_all_source$canonicalName == species_name][1])
+    return(dplyr::filter(invasive_all_source, canonicalName == species_name)$usageKey[1])
   } else if ("taxonSINAS" %in% colnames(invasive_all_source) && species_name %in% invasive_all_source$taxonSINAS) {
-    return(invasive_all_source$usageKey[invasive_all_source$taxonSINAS == species_name][1])
+    return(dplyr::filter(invasive_all_source, taxonSINAS == species_name)$usageKey[1])
   } else if ("taxonEPPO" %in% colnames(invasive_all_source) && species_name %in% invasive_all_source$taxonEPPO) {
-    return(invasive_all_source$usageKey[invasive_all_source$taxonEPPO == species_name][1])
+    return(dplyr::filter(invasive_all_source, taxonEPPO == species_name)$usageKey[1])
   } else if ("taxonCABI" %in% colnames(invasive_all_source) && species_name %in% invasive_all_source$taxonCABI) {
-    return(invasive_all_source$usageKey[invasive_all_source$taxonCABI == species_name][1])
+    return(dplyr::filter(invasive_all_source, taxonCABI == species_name)$usageKey[1])
   } else if ("usageKey" %in% colnames(invasive_all_source) && species_name %in% invasive_all_source$usageKey) {
     return(species_name)
   } else if ("canonicalName" %in% colnames(invasive_all_source) && species_name %in% invasive_all_source$canonicalName) {
-    return(invasive_all_source$usageKey[invasive_all_source$speciesGBIF == species_name][1])
+    return(dplyr::filter(invasive_all_source, speciesGBIF == species_name)$usageKey[1])
   } else if ("taxonDAISIE" %in% colnames(invasive_all_source) && species_name %in% invasive_all_source$taxonDAISIE) {
-    return(invasive_all_source$usageKey[invasive_all_source$taxonDAISIE == species_name][1])
+    return(dplyr::filter(invasive_all_source, taxonDAISIE == species_name)$usageKey[1])
   } else if (grepl("^[xX]{2}", species_name) || grepl("^\\d+$", species_name)) {
     return(species_name)
   } else {
@@ -206,9 +205,9 @@ get_first_introductions <- function(species_name, check_exists = FALSE, ISO3_onl
       stop("Species not in Database. Try checking master list with get_all_species()")
     }
   }
-  df <- first_records[first_records$usageKey == usageKey, ]
+  df <- first_records %>% dplyr::filter(usageKey == !!usageKey)
   if (ISO3_only == TRUE) {
-    df <- df[nchar(df$ISO3) == 3, ]
+    df <- df %>% dplyr::filter(nchar(ISO3) == 3)
   }
   if (import_additional_native_info == TRUE) {
     ISO3_list <- unique(as.character(df$ISO3))
@@ -217,17 +216,17 @@ get_first_introductions <- function(species_name, check_exists = FALSE, ISO3_onl
     ISO3_list <- ISO3_list[nchar(ISO3_list) == 3]
     native_ranges <- get_native_ranges(usageKey, ISO3 = unique(ISO3_list))
 
-    native_ranges <- native_ranges[!is.na(native_ranges$Native), ]
+    native_ranges <- native_ranges %>% dplyr::filter(!is.na(Native))
     for (i in 1:nrow(native_ranges)) {
       if (native_ranges$Native[i] == TRUE) {
-        df[df$ISO3 == native_ranges$ISO3[i], "Native"] <- TRUE
+        df <- df %>% dplyr::mutate(Native = ifelse(ISO3 == native_ranges$ISO3[i], TRUE, Native))
       } else {
-        df[df$ISO3 == native_ranges$ISO3[i], "Native"] <- FALSE
+        df <- df %>% dplyr::mutate(Native = ifelse(ISO3 == native_ranges$ISO3[i], FALSE, Native))
       }
     }
-    return(df[!df$ISO3 %in% c("ZZ", "XL", "XZ"), ])
+    return(df %>% dplyr::filter(!ISO3 %in% c("ZZ", "XL", "XZ")))
   } else {
-    return(df[!df$ISO3 %in% c("ZZ", "XL", "XZ"), ])
+    return(df %>% dplyr::filter(!ISO3 %in% c("ZZ", "XL", "XZ")))
   }
 }
 
@@ -264,26 +263,26 @@ get_all_introductions <- function(species_name, check_exists = FALSE, ISO3_only 
     usageKey <- get_usageKey(usageKey)
   }
 
-  df <- all_records[all_records$usageKey == usageKey, ]
+  df <- all_records %>% dplyr::filter(usageKey == !!usageKey)
   if (ISO3_only == TRUE) {
-    df <- df[nchar(df$ISO3) == 3, ]
+    df <- df %>% dplyr::filter(nchar(ISO3) == 3)
   }
 
   if (import_additional_native_info == TRUE) {
-    ISO3_list <- unique(as.character(unique(df$ISO3)))
+    ISO3_list <- unique(as.character(df$ISO3))
     ISO3_list <- ISO3_list[nchar(ISO3_list) == 3]
     native_ranges <- get_native_ranges(usageKey, ISO3 = unique(ISO3_list))
-    native_ranges <- native_ranges[!is.na(native_ranges$Native), ]
+    native_ranges <- native_ranges %>% dplyr::filter(!is.na(Native))
     for (i in 1:nrow(native_ranges)) {
       if (native_ranges$Native[i] == TRUE) {
-        df[df$ISO3 == native_ranges$ISO3[i], "Native"] <- TRUE
+        df <- df %>% dplyr::mutate(Native = ifelse(ISO3 == native_ranges$ISO3[i], TRUE, Native))
       } else {
-        df[df$ISO3 == native_ranges$ISO3[i], "Native"] <- FALSE
+        df <- df %>% dplyr::mutate(Native = ifelse(ISO3 == native_ranges$ISO3[i], FALSE, Native))
       }
     }
-    return(df[!df$ISO3 %in% c("ZZ", "XL", "XZ"), ])
+    return(df %>% dplyr::filter(!ISO3 %in% c("ZZ", "XL", "XZ")))
   } else {
-    return(df[!df$ISO3 %in% c("ZZ", "XL", "XZ"), ])
+    return(df %>% dplyr::filter(!ISO3 %in% c("ZZ", "XL", "XZ")))
   }
 }
 
@@ -312,18 +311,18 @@ get_ecology <- function(species_name, check_exists = FALSE) {
   result_dict <- list()
   usageKey <- get_usageKey(species_name)
 
-  result_dict$CABI_rainfall <- CABI_rainfall[CABI_rainfall$usageKey == usageKey, ]
-  result_dict$CABI_airtemp <- CABI_airtemp[CABI_airtemp$usageKey == usageKey, ]
-  result_dict$CABI_climate <- CABI_climate[CABI_climate$usageKey == usageKey, ]
-  result_dict$CABI_environments <- CABI_environments[CABI_environments$usageKey == usageKey, ]
-  result_dict$CABI_lat_alt <- CABI_lat_alt[CABI_lat_alt$usageKey == usageKey, ]
-  result_dict$CABI_water_tolerances <- CABI_water_tolerances[CABI_water_tolerances$usageKey == usageKey, ]
-  result_dict$CABI_wood_packaging <- CABI_wood_packaging[CABI_wood_packaging$usageKey == usageKey, ]
-  result_dict$DAISIE_habitats <- DAISIE_habitats[DAISIE_habitats$usageKey == usageKey, ]
+  result_dict$CABI_rainfall <- CABI_rainfall %>% dplyr::filter(usageKey == !!usageKey)
+  result_dict$CABI_airtemp <- CABI_airtemp %>% dplyr::filter(usageKey == !!usageKey)
+  result_dict$CABI_climate <- CABI_climate %>% dplyr::filter(usageKey == !!usageKey)
+  result_dict$CABI_environments <- CABI_environments %>% dplyr::filter(usageKey == !!usageKey)
+  result_dict$CABI_lat_alt <- CABI_lat_alt %>% dplyr::filter(usageKey == !!usageKey)
+  result_dict$CABI_water_tolerances <- CABI_water_tolerances %>% dplyr::filter(usageKey == !!usageKey)
+  result_dict$CABI_wood_packaging <- CABI_wood_packaging %>% dplyr::filter(usageKey == !!usageKey)
+  result_dict$DAISIE_habitats <- DAISIE_habitats %>% dplyr::filter(usageKey == !!usageKey)
 
   # Remove rows with all NA from each table
   result_dict <- lapply(result_dict, function(x) {
-    x <- x[!apply(is.na(x) | x == "", 1, all), ]
+    x <- x %>% dplyr::filter(!apply(is.na(.) | . == "", 1, all))
     if (nrow(x) == 0) {
       return(NULL)
     } else {
@@ -365,14 +364,14 @@ get_hosts_and_vectors <- function(species_name, check_exists = FALSE) {
   usageKey <- get_usageKey(species_name)
 
   results_dict <- list()
-  results_dict$CABI_tohostPlants <- CABI_tohostPlants[CABI_tohostPlants$usageKey == usageKey, ]
-  results_dict$CABI_topathwayVectors <- CABI_topathwayVectors[CABI_topathwayVectors$usageKey == usageKey, ]
-  results_dict$CABI_topathwayCauses <- CABI_topathwayCauses[CABI_topathwayCauses$usageKey == usageKey, ]
-  results_dict$CABI_tovectorsAndIntermediateHosts <- CABI_tovectorsAndIntermediateHosts[CABI_tovectorsAndIntermediateHosts$usageKey == usageKey, ]
-  results_dict$EPPO_hosts <- EPPO_hosts[EPPO_hosts$usageKey == usageKey, ]
-  results_dict$DAISIE_pathways <- DAISIE_pathways[DAISIE_pathways$usageKey == usageKey, ]
-  results_dict$DAISIE_vectors <- DAISIE_vectors[DAISIE_vectors$usageKey == usageKey, ]
-  results_dict$CABI_toplantTrade <- CABI_toplantTrade[CABI_toplantTrade$usageKey == usageKey, ]
+  results_dict$CABI_tohostPlants <- CABI_tohostPlants %>% dplyr::filter(usageKey == !!usageKey)
+  results_dict$CABI_topathwayVectors <- CABI_topathwayVectors %>% dplyr::filter(usageKey == !!usageKey)
+  results_dict$CABI_topathwayCauses <- CABI_topathwayCauses %>% dplyr::filter(usageKey == !!usageKey)
+  results_dict$CABI_tovectorsAndIntermediateHosts <- CABI_tovectorsAndIntermediateHosts %>% dplyr::filter(usageKey == !!usageKey)
+  results_dict$EPPO_hosts <- EPPO_hosts %>% dplyr::filter(usageKey == !!usageKey)
+  results_dict$DAISIE_pathways <- DAISIE_pathways %>% dplyr::filter(usageKey == !!usageKey)
+  results_dict$DAISIE_vectors <- DAISIE_vectors %>% dplyr::filter(usageKey == !!usageKey)
+  results_dict$CABI_toplantTrade <- CABI_toplantTrade %>% dplyr::filter(usageKey == !!usageKey)
 
   # Remove rows with all NA from each table
   results_dict <- lapply(results_dict, function(x) {
@@ -412,26 +411,29 @@ get_hosts_and_vectors <- function(species_name, check_exists = FALSE) {
 #'   print(species_list)
 #' }
 get_species_list <- function(kingdom = NULL, phylum = NULL, taxonomic_class = NULL, order = NULL, family = NULL, genus = NULL) {
-  # GBIF_backbone_invasive <- read.csv("GBIF data\\GBIF_backbone_invasive.csv", stringsAsFactors = FALSE)
+  # Filter the GBIF_backbone_invasive dataset using dplyr::filter
+  filtered_data <- GBIF_backbone_invasive
+  
   if (!is.null(kingdom)) {
-    GBIF_backbone_invasive <- GBIF_backbone_invasive[GBIF_backbone_invasive$kingdom == kingdom, ]
+    filtered_data <- filtered_data %>% dplyr::filter(kingdom == !!kingdom)
   }
   if (!is.null(phylum)) {
-    GBIF_backbone_invasive <- GBIF_backbone_invasive[GBIF_backbone_invasive$phylum == phylum, ]
+    filtered_data <- filtered_data %>% dplyr::filter(phylum == !!phylum)
   }
   if (!is.null(taxonomic_class)) {
-    GBIF_backbone_invasive <- GBIF_backbone_invasive[GBIF_backbone_invasive$class == taxonomic_class, ]
+    filtered_data <- filtered_data %>% dplyr::filter(class == !!taxonomic_class)
   }
   if (!is.null(order)) {
-    GBIF_backbone_invasive <- GBIF_backbone_invasive[GBIF_backbone_invasive$order == order, ]
+    filtered_data <- filtered_data %>% dplyr::filter(order == !!order)
   }
   if (!is.null(family)) {
-    GBIF_backbone_invasive <- GBIF_backbone_invasive[GBIF_backbone_invasive$family == family, ]
+    filtered_data <- filtered_data %>% dplyr::filter(family == !!family)
   }
   if (!is.null(genus)) {
-    GBIF_backbone_invasive <- GBIF_backbone_invasive[GBIF_backbone_invasive$genus == genus, ]
+    filtered_data <- filtered_data %>% dplyr::filter(genus == !!genus)
   }
-  usageKey_list <- unique(GBIF_backbone_invasive$usageKey)
+  
+  usageKey_list <- unique(filtered_data$usageKey)
   return(usageKey_list)
 }
 
@@ -462,47 +464,43 @@ get_native_ranges <- function(species_name, ISO3 = NULL, check_exists = FALSE) {
   usageKey <- get_usageKey(species_name)
 
   if (is.null(ISO3)) {
-    records <- all_records[all_records$usageKey == usageKey, ]
-    print(tail(records))
-    records <- records[!is.na(records$Native), ]
-    print(head(records))
-    records <- records[records$Source != "Original", ]
-    records <- records[, c("ISO3", "Source", "Native", "Reference")]
-    records$bioregion <- NA
-    records$DAISIE_region <- NA
+    records <- all_records %>% dplyr::filter(usageKey == !!usageKey)
+    records <- records %>% dplyr::filter(!is.na(Native))
+    records <- records %>% dplyr::filter(Source != "Original")
+    records <- records %>% dplyr::select(ISO3, Source, Native, Reference)
+    records <- records %>% dplyr::mutate(bioregion = NA, DAISIE_region = NA)
 
-    native_ranges_temp <- native_ranges[native_ranges$usageKey == usageKey, ]
-    native_ranges_temp <- native_ranges_temp[, c("Source", "bioregion", "DAISIE_region", "Reference")]
-    native_ranges_temp$Native <- TRUE
-    native_ranges_temp$ISO3 <- NA
+    native_ranges_temp <- native_ranges %>% dplyr::filter(usageKey == !!usageKey)
+    native_ranges_temp <- native_ranges_temp %>% dplyr::select(Source, bioregion, DAISIE_region, Reference)
+    native_ranges_temp <- native_ranges_temp %>% dplyr::mutate(Native = TRUE, ISO3 = NA)
 
-    records <- rbind(records, native_ranges_temp)
+    records <- dplyr::bind_rows(records, native_ranges_temp)
 
     return(records)
   } else if (!is.null(ISO3)) {
-    if (!is.character(ISO3) || any(sapply(ISO3, nchar) != 3)) {
-      stop("ISO3 must be a list of 3 character strings")
-    }
+    ISO3 <- ISO3[!is.na(ISO3) & nchar(ISO3) == 3]
 
-    native_ranges$usageKey <- as.character(native_ranges$usageKey)
+    native_ranges <- native_ranges %>% dplyr::mutate(usageKey = as.character(usageKey))
 
-    records <- all_records[all_records$usageKey == usageKey, ]
-    records <- records[!is.na(records$Native), ]
+    records <- all_records %>% dplyr::filter(usageKey == !!usageKey)
+    records <- records %>% dplyr::filter(!is.na(Native))
+    records <- records %>% dplyr::filter(Source != "Original")
+    records <- records %>% dplyr::select(ISO3, Source, Native, Reference)
+    records <- records %>% dplyr::mutate(bioregion = NA, DAISIE_region = NA)
 
-    records <- records[records$Source != "Original", ]
-    records <- records[, c("ISO3", "Source", "Native", "Reference")]
-    records$bioregion <- NA
-    records$DAISIE_region <- NA
+    t_f_df <- tibble::tibble(ISO3 = character(), Native = logical(), src = character())
 
-    t_f_df <- data.frame(ISO3 = character(), Native = logical(), src = character(), stringsAsFactors = FALSE)
-
-    bioregions <- unique(native_ranges[native_ranges$usageKey == usageKey, ]$bioregion)
+    bioregions <- native_ranges %>% dplyr::filter(usageKey == !!usageKey) %>% dplyr::pull(bioregion) %>% unique()
 
     for (iso3 in ISO3) {
       native <- NA
+      src <- NA
 
       if (length(bioregions) > 0) {
-        bioregions_temp <- unique(native_range_crosswalk[native_range_crosswalk$ISO3 == iso3, ]$modified_Bioregion)
+        bioregions_temp <- native_range_crosswalk %>% 
+          dplyr::filter(ISO3 == !!iso3) %>% 
+          dplyr::pull(modified_Bioregion) %>% 
+          unique()
 
         for (br in bioregions_temp) {
           if (br %in% bioregions) {
@@ -517,7 +515,7 @@ get_native_ranges <- function(species_name, ISO3 = NULL, check_exists = FALSE) {
       }
 
       if (iso3 %in% records$ISO3) {
-        native <- records[records$ISO3 == iso3, ]$Native
+        native <- records %>% dplyr::filter(ISO3 == !!iso3) %>% dplyr::pull(Native)
         src <- "records"
       }
 
@@ -526,7 +524,7 @@ get_native_ranges <- function(species_name, ISO3 = NULL, check_exists = FALSE) {
         src <- "records only - no bioregion found"
       }
 
-      t_f_df <- rbind(t_f_df, data.frame(ISO3 = iso3, Native = native, src = src, stringsAsFactors = FALSE))
+      t_f_df <- dplyr::bind_rows(t_f_df, tibble::tibble(ISO3 = iso3, Native = native, src = src))
     }
 
     return(t_f_df)
@@ -562,13 +560,15 @@ get_common_names <- function(species_name, check_exists = FALSE) {
   results_dict <- list()
 
   if (usageKey %in% DAISIE_vernacular$usageKey) {
-    filtered_DAISIE <- DAISIE_vernacular[DAISIE_vernacular$usageKey == usageKey, ]
-    results_dict$DAISIE_vernacular <- filtered_DAISIE[rowSums(is.na(filtered_DAISIE)) < ncol(filtered_DAISIE), ]
+    results_dict$DAISIE_vernacular <- DAISIE_vernacular %>%
+      dplyr::filter(usageKey == !!usageKey) %>%
+      dplyr::filter(rowSums(is.na(.)) < ncol(.))
   }
 
   if (usageKey %in% EPPO_names$usageKey) {
-    filtered_EPPO <- EPPO_names[EPPO_names$usageKey == usageKey, ]
-    results_dict$EPPO_names <- filtered_EPPO[rowSums(is.na(filtered_EPPO)) < ncol(filtered_EPPO), ]
+    results_dict$EPPO_names <- EPPO_names %>%
+      dplyr::filter(usageKey == !!usageKey) %>%
+      dplyr::filter(rowSums(is.na(.)) < ncol(.))
   }
 
   # Remove empty elements from the results_dict
