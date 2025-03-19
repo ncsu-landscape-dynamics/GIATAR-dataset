@@ -114,7 +114,6 @@ library(dplyr)
 library(tidyr)
 library(rgbif)
 source("query_functions/R/GIATAR_query_functions.R")
-
 ## Set the path to data
 ```
 
@@ -175,12 +174,15 @@ print(taxa_by_host)
 ```
 
 ```{r introductions_by_trait}
-# Create a table of first introductions for all taxa in the taxa_by_host example
+# Example 4: Get first introductions for the first 20 taxa associated with a host
+
 first_introductions_df <- data.frame()
-for (taxon in taxa_by_host$canonicalName) {
+for (taxon in taxa_by_host$canonicalName[1:20]) {
     # print(taxon)
     df <- get_first_introductions(taxon)
     df$canonicalName <- taxon
     first_introductions_df <- bind_rows(first_introductions_df, df)
 }
+
+print(first_introductions_df)
 ```
