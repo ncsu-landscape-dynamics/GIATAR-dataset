@@ -1,7 +1,7 @@
 # GIATAR-dataset
 Global Invasive and Alien Traits and Records Dataset
 
-The dataset is available at: http://doi.org/10.5281/zenodo.13138446
+The dataset is available at: http://doi.org/10.5281/zenodo.13138446 (for direct download, or using the functions described below).
 
 The dataset repository includes **all data files** and the code and tutorials needed to **query and use** the dataset.
 
@@ -21,6 +21,10 @@ This repository contains the following code:
 
 - query_functions: a set of python scripts for the user to quickly query common data from the dataset. 
 - data_update: scripts to obtain and update the dataset from its original sources
+
+## Downloading the GIATAR dataset
+
+The dataset can be downloaded manually from Zenodo or using the `get_GIATAR_current()` function.
 
 ### Using the dataset - query functions
 
