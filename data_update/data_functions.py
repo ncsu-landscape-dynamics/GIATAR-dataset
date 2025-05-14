@@ -20,14 +20,13 @@ import pycountry
 
 import spacy
 import regex as re
-import tqdm
 import os
 import dotenv
 from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 from pygbif import species
-from urllib.error import HTTPError, URLError
+from urllib.error import HTTPError
 from urllib3 import Timeout
-from tqdm._tqdm_notebook import tqdm_notebook
+from io import StringIO
 
 
 dotenv.load_dotenv(".env")
@@ -137,7 +136,7 @@ def scrape_eppo_reports_species(code):
     soup = BeautifulSoup(html, "html.parser")
 
     reporting = soup.find("table")
-    report_table = pd.read_html(reporting.prettify())[0]
+    report_table = pd.read_html(StringIO(reporting.prettify()))[0]
     report_table["codeEPPO"] = code
     links = reporting.find_all("a")
 
@@ -304,7 +303,7 @@ def scrape_monthly_eppo_report(year, month):
     soup = BeautifulSoup(html, "html.parser")
 
     reporting = soup.find("table")
-    report_table = pd.read_html(reporting.prettify())[0]
+    report_table = pd.read_html(StringIO(reporting.prettify()))[0]
     report_table["year-month"] = f"{year}-{month}"
     report_table["year"] = year
     links = reporting.find_all("a")
@@ -460,7 +459,7 @@ def scrape_eppo_distribution_species(code):
     soup = BeautifulSoup(html, "html.parser")
 
     reporting = soup.find("table")
-    report_table = pd.read_html(reporting.prettify())[0]
+    report_table = pd.read_html(StringIO(reporting.prettify()))[0]
     report_table["codeEPPO"] = code
     links = reporting.find_all("a")
 
@@ -683,7 +682,7 @@ def CABI_sections_to_tables(CABI_tables, append=False):
         read_tables = []
 
         for i in sub_section.index:
-            tables = pd.read_html(sub_section.content[i])
+            tables = pd.read_html(StringIO(sub_section.content[i]))
 
             for table in tables:
                 table["code"] = sub_section.code[i]
@@ -923,9 +922,6 @@ def check_gbif_tax_secondary(dat):
     n_taxa = len(taxlist)
 
     mismatches = pd.DataFrame(columns=["Taxon", "status", "matchType"])
-
-    # Initialize progress bar
-    # tqdm_notebook.pandas()
 
     for j in range(n_taxa):
         taxon = taxlist[j]
