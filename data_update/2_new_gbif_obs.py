@@ -29,7 +29,7 @@ today = date.today()
 # Start with master list
 
 species_list = pd.read_csv(
-    data_dir + "link_files/all_usageKeys.csv", dtype={"usageKey": str}
+    data_dir + "link files/all_usageKeys.csv", dtype={"usageKey": str}
 )
 
 # Get keys that belong to new species
