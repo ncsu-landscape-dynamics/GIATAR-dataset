@@ -12,7 +12,11 @@ import pandas as pd
 from datetime import date
 import spacy
 
-spacy.cli.download("en_core_web_sm")
+try:
+    spacy.load("en_core_web_sm")
+except OSError:
+    import spacy.cli
+    spacy.cli.download("en_core_web_sm")
 
 sys.path.append(os.getcwd())
 
@@ -44,18 +48,23 @@ last_month = int(last_update[1])
 # Create a list of years and months between last update and now
 
 # Remaining months of last year
-months = [f"{i:02d}" for i in range(last_month + 1, 13)]
-years = [last_year] * len(months)
+if last_year != year:
+    months = [f"{i:02d}" for i in range(last_month, 13)]
+    years = [last_year] * len(months)
 
-# All months of years in between last year and this year
-for i in range(last_year + 1, year):
-    months += [f"{i:02d}" for i in range(1, 13)]
-    years += [i] * 12
+    # All months of years in between last year and this year
+    for i in range(last_year + 1, year):
+        months += [f"{i:02d}" for i in range(1, 13)]
+        years += [i] * 12
 
-# Past months of this year (up to but not including this month)
+    # Past months of this year (up to but not including this month)
 
-months += [f"{i:02d}" for i in range(1, today.month)]
-years += [year] * len([f"{i:02d}" for i in range(1, today.month)])
+    months += [f"{i:02d}" for i in range(1, today.month)]
+    years += [year] * len([f"{i:02d}" for i in range(1, today.month)])
+else:
+    # Months between (including) last month and this month
+    months = [f"{i:02d}" for i in range(last_month, today.month)]
+    years = [last_year] * len(months)
 
 # For species matching
 
