@@ -1,0 +1,22 @@
+[project]
+name = "giatar-dataset"
+version = "0.1.0"
+description = "Updating the GIATAR dataset"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "bs4>=0.0.2",
+    "ipykernel>=6.29.5",
+    "numpy>=2.2.5",
+    "pandas>=2.2.3",
+    "pip>=25.1.1",
+    "pycountry>=24.6.1",
+    "pygbif>=0.6.5",
+    "pytaxize>=0.7.0",
+    "python-dotenv>=1.1.0",
+    "regex>=2024.11.6",
+    "requests>=2.32.3",
+    "spacy>=3.8.5",
+    "tenacity>=9.1.2",
+    "urllib3>=2.4.0",
+]
