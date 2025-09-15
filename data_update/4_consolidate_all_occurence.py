@@ -637,54 +637,34 @@ single_record_IDs = all_records_firsts.loc[
 ].Combo_ID.unique()
 
 # Craft the values for the multi-record combos
-sources = []
-references = []
-native = []
-record_type = []
-
-for i, combo_id in enumerate(multi_record_IDs):
-    # Filter to that combo
-    subset = all_records.loc[all_records["Combo_ID"] == combo_id]
-
-    # Concatenate sources and references
-    sources += [", ".join(subset["Source"].unique())]
-    try:
-        references += [", ".join(subset["Reference"].unique())]
-    except TypeError:
-        references += [""]
-
-    # If any Native columns are True, set Native to True. If some are False, set to False. If all are NA, set to NA.
-    if subset["Native"].any():
-        native += [True]
-    elif subset["Native"].isna().all():
-        native += [np.nan]
+def agg_native(series):
+    if series.any():
+        return True
+    elif series.isna().all():
+        return np.nan
     else:
-        native += [False]
+        return False
 
-    # If any of Type column are "First report" set Type to "First report", otherwise set to the first value
-    if "First report" in subset["Type"].unique():
-        record_type = "First report"
+def agg_type(series):
+    types = series.unique()
+    if "First report" in types:
+        return "First report"
     else:
-        record_type = subset["Type"].unique()[0]
+        return types[0]
 
-    # Print out every 100 rows so I know how it's going...
-    if i % 1000 == 0:
-        print(
-            f"Done with {i} of {len(multi_record_IDs)} rows... {round(i/len(multi_record_IDs),2)*100}%"
-        )
+multi_record_df = (
+    all_records_firsts[all_records_firsts["Combo_ID"].isin(multi_record_IDs)]
+    .groupby("Combo_ID")
+    .agg({
+        "Source": lambda x: ", ".join(x.unique()),
+        "Reference": lambda x: ", ".join(x.unique()),
+        "Native": agg_native,
+        "Type": agg_type,
+    })
+    .reset_index()
+)
 
 print("Done with multi-record combos!")
-
-# Save them as a dataframe
-multi_record_df = pd.DataFrame(
-    {
-        "Combo_ID": multi_record_IDs,
-        "Source": sources,
-        "Reference": references,
-        "Native": native,
-        "Type": record_type,
-    }
-)
 
 # Keep the single records as they are
 single_record_df = all_records.loc[
