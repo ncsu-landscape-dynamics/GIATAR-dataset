@@ -7,7 +7,9 @@ Description: Functions to facilitate querying the GIATAR database
 
 import pandas as pd
 import numpy as np
+import math
 import os
+import warnings
 import pygbif
 import dotenv
 import requests
@@ -46,14 +48,14 @@ else:
 if "invasive_all_source" not in globals():
     global invasive_all_source
     invasive_all_source = pd.read_csv(
-        r"species lists\invasive_all_source.csv", dtype={"usageKey": "str"}
+        os.path.join("species lists", "invasive_all_source.csv"), dtype={"usageKey": "str"}
     )
 
 
 if "first_records" not in globals():
     global first_records
     first_records = pd.read_csv(
-        r"occurrences\first_records.csv", dtype={"usageKey": "str"}, low_memory=False
+        os.path.join("occurrences", "first_records.csv"), dtype={"usageKey": "str"}, low_memory=False
     )
 
 
@@ -104,7 +106,7 @@ def get_usageKey(species_name):
     """
     if "invasive_all_source" not in globals():
         global invasive_all_source
-        invasive_all_source = pd.read_csv(f"species lists\invasive_all_source.csv")
+        invasive_all_source = pd.read_csv(os.path.join("species lists", "invasive_all_source.csv"))
 
     if species_name in invasive_all_source["canonicalName"].values:
         return invasive_all_source.loc[
@@ -291,7 +293,7 @@ def get_all_introductions(
     if "all_records" not in globals():
         global all_records
     all_records = pd.read_csv(
-        r"occurrences\all_records.csv", dtype={"usageKey": str}, low_memory=False
+        os.path.join("occurrences", "all_records.csv"), dtype={"usageKey": str}, low_memory=False
     )
 
     df = all_records.loc[all_records["usageKey"] == usageKey]
@@ -339,35 +341,35 @@ def get_ecology(species_name, check_exists=False):
     # load csv for each of these files'CABI_rainfall', 'CABI_airtemp', 'CABI_climate', 'CABI_environments', 'CABI_lat_alt', 'CABI_water_tolerances'
 
     CABI_rainfall = pd.read_csv(
-        r"CABI data\CABI_tables\torainfall.csv", dtype={"usageKey": "str"}
+        os.path.join("CABI data", "CABI_tables", "torainfall.csv"), dtype={"usageKey": "str"}
     )
     CABI_airtemp = pd.read_csv(
-        r"CABI data\CABI_tables\toairTemperature.csv", dtype={"usageKey": "str"}
+        os.path.join("CABI data", "CABI_tables", "toairTemperature.csv"), dtype={"usageKey": "str"}
     )
     CABI_climate = pd.read_csv(
-        r"CABI data\CABI_tables\toclimate.csv", dtype={"usageKey": "str"}
+        os.path.join("CABI data", "CABI_tables", "toclimate.csv"), dtype={"usageKey": "str"}
     )
     CABI_environments = pd.read_csv(
-        r"CABI data\CABI_tables\toenvironments.csv", dtype={"usageKey": "str"}
+        os.path.join("CABI data", "CABI_tables", "toenvironments.csv"), dtype={"usageKey": "str"}
     )
     CABI_lat_alt = pd.read_csv(
-        r"CABI data\CABI_tables\tolatitudeAndAltitudeRanges.csv",
+        os.path.join("CABI data", "CABI_tables", "tolatitudeAndAltitudeRanges.csv"),
         dtype={"usageKey": "str"},
     )
     CABI_natural_enemies = pd.read_csv(
-        r"CABI data\CABI_tables\tonaturalEnemies.csv", dtype={"usageKey": "str"}
+        os.path.join("CABI data", "CABI_tables", "tonaturalEnemies.csv"), dtype={"usageKey": "str"}
     )
     CABI_water_tolerances = pd.read_csv(
-        r"CABI data\CABI_tables\towaterTolerances.csv", dtype={"usageKey": "str"}
+        os.path.join("CABI data", "CABI_tables", "towaterTolerances.csv"), dtype={"usageKey": "str"}
     )
     CABI_wood_packaging = pd.read_csv(
-        r"CABI data\CABI_tables\towoodPackaging.csv", dtype={"usageKey": "str"}
+        os.path.join("CABI data", "CABI_tables", "towoodPackaging.csv"), dtype={"usageKey": "str"}
     )
     DAISIE_habitats = pd.read_csv(
-        r"DAISIE data\DAISIE_habitat.csv", dtype={"usageKey": "str"}
+        os.path.join("DAISIE data", "DAISIE_habitat.csv"), dtype={"usageKey": "str"}
     )
     CABI_plant_trade = pd.read_csv(
-        r"CABI data\CABI_tables\toplantTrade.csv", dtype={"usageKey": "str"}
+        os.path.join("CABI data", "CABI_tables", "toplantTrade.csv"), dtype={"usageKey": "str"}
     )
     # return a list of all rows where usageKey = usageKey
     # place rows into a dataframe and put into results_dict with key = filename
@@ -430,24 +432,24 @@ def get_hosts_and_vectors(species_name, check_exists=False):
     usageKey = get_usageKey(species_name)
 
     CABI_tohostPlants = pd.read_csv(
-        r"CABI data\CABI_tables\tohostPlants.csv", dtype={"usageKey": "str"}
+        os.path.join("CABI data", "CABI_tables", "tohostPlants.csv"), dtype={"usageKey": "str"}
     )
     CABI_topathwayVectors = pd.read_csv(
-        r"CABI data\CABI_tables\topathwayVectors.csv", dtype={"usageKey": "str"}
+        os.path.join("CABI data", "CABI_tables", "topathwayVectors.csv"), dtype={"usageKey": "str"}
     )
     CABI_topathwayCauses = pd.read_csv(
-        r"CABI data\CABI_tables\topathwayCauses.csv", dtype={"usageKey": "str"}
+        os.path.join("CABI data", "CABI_tables", "topathwayCauses.csv"), dtype={"usageKey": "str"}
     )
     CABI_tovectorsAndIntermediateHosts = pd.read_csv(
-        r"CABI data\CABI_tables\tovectorsAndIntermediateHosts.csv",
+        os.path.join("CABI data", "CABI_tables", "tovectorsAndIntermediateHosts.csv"),
         dtype={"usageKey": "str"},
     )
-    EPPO_hosts = pd.read_csv(r"EPPO data\EPPO_hosts.csv", dtype={"usageKey": "str"})
+    EPPO_hosts = pd.read_csv(os.path.join("EPPO data", "EPPO_hosts.csv"), dtype={"usageKey": "str"})
     DAISIE_pathways = pd.read_csv(
-        r"DAISIE data\DAISIE_pathways.csv", dtype={"usageKey": "str"}
+        os.path.join("DAISIE data", "DAISIE_pathways.csv"), dtype={"usageKey": "str"}
     )
     DAISIE_vectors = pd.read_csv(
-        r"DAISIE data\DAISIE_vectors.csv", dtype={"usageKey": "str"}
+        os.path.join("DAISIE data", "DAISIE_vectors.csv"), dtype={"usageKey": "str"}
     )
 
     ################################################################
@@ -508,7 +510,7 @@ def get_species_list(
     Returns:
     list: A list of unique usage keys that match the specified taxonomic criteria.
     """
-    GBIF_backbone_invasive = pd.read_csv(r"GBIF data\GBIF_backbone_invasive.csv")
+    GBIF_backbone_invasive = pd.read_csv(os.path.join("GBIF data", "GBIF_backbone_invasive.csv"))
 
     # CREATE LIST OF USAGE KEYS MATCHING taxonomic CRITERIA
     # returns list of usageKeys matching taxonomic criteria
@@ -573,7 +575,7 @@ def get_native_ranges(species_name, ISO3=None, check_exists=False):
     if "native_ranges" not in globals():
         global native_ranges
         native_ranges = pd.read_csv(
-            r"native ranges\all_sources_native_ranges.csv",
+            os.path.join("native ranges", "all_sources_native_ranges.csv"),
             dtype={"usageKey": str},
             low_memory=False,
         )
@@ -582,12 +584,12 @@ def get_native_ranges(species_name, ISO3=None, check_exists=False):
     if "native_range_crosswalk" not in globals():
         global native_range_crosswalk
         native_range_crosswalk = pd.read_csv(
-            r"native ranges\native_range_crosswalk.csv", low_memory=False
+            os.path.join("native ranges", "native_range_crosswalk.csv"), low_memory=False
         )
     if "all_records" not in globals():
         global all_records
         all_records = pd.read_csv(
-            r"occurrences\all_records.csv", dtype={"usageKey": str}, low_memory=False
+            os.path.join("occurrences", "all_records.csv"), dtype={"usageKey": str}, low_memory=False
         )
     usageKey = get_usageKey(species_name)
 
@@ -720,12 +722,12 @@ def get_common_names(species_name, check_exists=False):
     usageKey = get_usageKey(species_name)
 
     DAISIE_vernacular = pd.read_csv(
-        r"DAISIE data\DAISIE_vernacular_names.csv",
+        os.path.join("DAISIE data", "DAISIE_vernacular_names.csv"),
         dtype={"usageKey": str},
         low_memory=False,
     )
     EPPO_names = pd.read_csv(
-        r"EPPO data\EPPO_names.csv", dtype={"usageKey": str}, low_memory=False
+        os.path.join("EPPO data", "EPPO_names.csv"), dtype={"usageKey": str}, low_memory=False
     )
     results_dict = {}
 
@@ -803,11 +805,11 @@ def get_trait_table(table_name, usageKey=None):
     else:
         file_path = None
         if table_name == "CABI_rainfall":
-            file_path = "CABI data/CABI_tables/torainfall.csv"
+            file_path = os.path.join("CABI data", "CABI_tables", "torainfall.csv")
         elif table_name == "CABI_airtemp":
-            file_path = "CABI data/CABI_tables/toairTemperature.csv"
+            file_path = os.path.join("CABI data", "CABI_tables", "toairTemperature.csv")
         elif table_name == "CABI_latitude_altitude":
-            file_path = "CABI data/CABI_tables/tolatitudeAndAltitudeRanges.csv"
+            file_path = os.path.join("CABI data", "CABI_tables", "tolatitudeAndAltitudeRanges.csv")
         # Add similar conditions for other tables
 
         if file_path is not None:
@@ -866,9 +868,9 @@ def get_taxa_by_host(host_name):
         list: A list of taxa names (canonical name) for taxa associated with matches for the specified host name.
     """
     CABI_hosts = pd.read_csv(
-        r"CABI data\CABI_tables\tohostPlants.csv", dtype={"usageKey": "str"}
+        os.path.join("CABI data", "CABI_tables", "tohostPlants.csv"), dtype={"usageKey": "str"}
     )
-    EPPO_hosts = pd.read_csv(r"EPPO data\EPPO_hosts.csv", dtype={"usageKey": "str"})
+    EPPO_hosts = pd.read_csv(os.path.join("EPPO data", "EPPO_hosts.csv"), dtype={"usageKey": "str"})
 
     # Filter the dataframes to get rows where the host name matches
     cabi_hosts = CABI_hosts[
@@ -919,13 +921,13 @@ def get_taxa_by_pathway(pathway_name):
         list: A list of taxa names (canonical name) for taxa associated with matches for the specified pathway name.
     """
     CABI_pathways = pd.read_csv(
-        r"CABI data\CABI_tables\topathwayVectors.csv", dtype={"usageKey": "str"}
+        os.path.join("CABI data", "CABI_tables", "topathwayVectors.csv"), dtype={"usageKey": "str"}
     )
     DAISIE_pathways = pd.read_csv(
-        r"DAISIE data\DAISIE_pathways.csv", dtype={"usageKey": "str"}
+        os.path.join("DAISIE data", "DAISIE_pathways.csv"), dtype={"usageKey": "str"}
     )
     CABI_pathway_causes = pd.read_csv(
-        r"CABI data\CABI_tables\topathwayCauses.csv", dtype={"usageKey": "str"}
+        os.path.join("CABI data", "CABI_tables", "topathwayCauses.csv"), dtype={"usageKey": "str"}
     )
 
     # Filter the dataframes to get rows where the pathway name matches
@@ -999,7 +1001,7 @@ def get_taxa_by_vector(vector_name):
         list: A list of taxa names (canonical name) for taxa associated with matches for the specified vector name.
     """
     CABI_vectors = pd.read_csv(
-        r"CABI data\CABI_tables\tovectorsAndIntermediateHosts.csv",
+        os.path.join("CABI data", "CABI_tables", "tovectorsAndIntermediateHosts.csv"),
         dtype={"usageKey": "str"},
     )
 
