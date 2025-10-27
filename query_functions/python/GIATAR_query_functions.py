@@ -422,7 +422,6 @@ def get_hosts_and_vectors(species_name, check_exists=False):
     >>> print(results.keys())
     dict_keys(['CABI_tohostPlants', 'CABI_topathwayVectors', 'CABI_tovectorsAndIntermediateHosts', 'EPPO_hosts', 'DAISIE_pathways', 'DAISIE_vectors', 'CABI_topathwayCauses'])
     """
-    os.chdir(data_path)
     if check_exists == True:
         if not check_species_exists(species_name):
             raise KeyError(
