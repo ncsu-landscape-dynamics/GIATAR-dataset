@@ -472,7 +472,7 @@ get_native_ranges <- function(species_name, ISO3 = NULL, check_exists = FALSE) {
 
     native_ranges_temp <- native_ranges %>% dplyr::filter(usageKey == !!usageKey)
     native_ranges_temp <- native_ranges_temp %>% dplyr::select(Source, bioregion, DAISIE_region, Reference)
-    native_ranges_temp <- native_ranges_temp %>% dplyr::mutate(Native = TRUE, ISO3 = NA)
+    native_ranges_temp <- native_ranges_temp %>% dplyr::mutate(Native = TRUE, ISO3 = NA_character_)
 
     records <- dplyr::bind_rows(records, native_ranges_temp)
 
